@@ -1,0 +1,47 @@
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Logger } from '@nestjs/common';
+import { Job } from 'bullmq';
+import { SeedingService, SEEDING_QUEUE } from './seeding.service.js';
+import { JobLogger } from '../../../common/utils/index.js';
+
+export interface SeedingJobData {
+  targetFirmCount: number;
+}
+
+@Processor(SEEDING_QUEUE, { concurrency: 3 })
+export class SeedingProcessor extends WorkerHost {
+  private readonly logger = new Logger(SeedingProcessor.name);
+  private readonly jobLogger = new JobLogger(SeedingProcessor.name);
+
+  constructor(private readonly seedingService: SeedingService) {
+    super();
+  }
+
+  async process(job: Job<SeedingJobData>): Promise<any> {
+    const { targetFirmCount } = job.data;
+    this.logger.log(
+      `Processing seeding job (target: ${targetFirmCount} firms)`,
+    );
+    this.jobLogger.log(
+      `Processing seeding job (target: ${targetFirmCount} firms)`,
+    );
+
+    try {
+      const result = await this.seedingService.seed(
+        targetFirmCount,
+        String(job.id),
+      );
+      return { success: true, ...result };
+    } catch (error) {
+      this.logger.error('Seeding job failed', {
+        error: error.message,
+        stack: error.stack,
+      });
+      this.jobLogger.error('Seeding job failed', {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  }
+}
