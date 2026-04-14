@@ -70,11 +70,11 @@ curl -X POST http://localhost:3000/api/pipeline/seed \
 # Extraction runs automatically after each source is collected
 curl -X POST http://localhost:3000/api/pipeline/collect
 
-# Monitor progress
-curl http://localhost:3000/api/pipeline/status
-
 # Stage 4 — Score all firms
 curl -X POST http://localhost:3000/api/pipeline/score
+
+# Monitor pipeline progress at any moment
+curl http://localhost:3000/api/pipeline/status
 ```
 
 ### View Results
@@ -126,16 +126,16 @@ The app container builds from `Dockerfile`, waits for Postgres and Redis health 
 
 ## Scripts
 
-| Script | Description |
-| ------ | ----------- |
-| `pnpm dev` | Start in watch mode with auto-reload |
-| `pnpm run debug` | Start in debug mode with Node inspector |
-| `pnpm run build` | Compile TypeScript to `dist/` |
-| `pnpm start:prod` | Run compiled output from `dist/` |
-| `pnpm run lint` | Run ESLint with auto-fix |
-| `pnpm run format` | Run Prettier on all source files |
-| `pnpm test` | Run Jest unit tests |
-| `pnpm run test:e2e` | Run end-to-end tests |
+| Script              | Description                             |
+| ------------------- | --------------------------------------- |
+| `pnpm dev`          | Start in watch mode with auto-reload    |
+| `pnpm run debug`    | Start in debug mode with Node inspector |
+| `pnpm run build`    | Compile TypeScript to `dist/`           |
+| `pnpm start:prod`   | Run compiled output from `dist/`        |
+| `pnpm run lint`     | Run ESLint with auto-fix                |
+| `pnpm run format`   | Run Prettier on all source files        |
+| `pnpm test`         | Run Jest unit tests                     |
+| `pnpm run test:e2e` | Run end-to-end tests                    |
 
 ## Debugging
 
@@ -163,12 +163,12 @@ NestJS logs to stdout. In `NODE_ENV=development`, TypeORM also logs all SQL quer
 
 ### Common Issues
 
-| Symptom | Likely Cause | Fix |
-| ------- | ------------ | --- |
-| `ECONNREFUSED :5432` | PostgreSQL not running | `docker-compose up -d postgres` |
-| `ECONNREFUSED :6379` | Redis not running | `docker-compose up -d redis` |
-| Seeding finds 0 firms | Missing or invalid `EXA_API_KEY` | Check `.env` |
-| LLM extraction skipped | Missing `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY` if `LLM_PROVIDER=openai`) | Check `.env` |
-| Collection hangs | Rate limiter waiting on Exa/SEC | Normal — check `pipeline/status` for progress |
-| Score is `null` for a firm | Fewer signals than `minSignalsForScore` (default: 1) | Run collection first, or lower threshold |
-| Schema drift after code change | `synchronize: true` only in development | Restart the app to apply entity changes |
+| Symptom                        | Likely Cause                                                               | Fix                                           |
+| ------------------------------ | -------------------------------------------------------------------------- | --------------------------------------------- |
+| `ECONNREFUSED :5432`           | PostgreSQL not running                                                     | `docker-compose up -d postgres`               |
+| `ECONNREFUSED :6379`           | Redis not running                                                          | `docker-compose up -d redis`                  |
+| Seeding finds 0 firms          | Missing or invalid `EXA_API_KEY`                                           | Check `.env`                                  |
+| LLM extraction skipped         | Missing `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY` if `LLM_PROVIDER=openai`) | Check `.env`                                  |
+| Collection hangs               | Rate limiter waiting on Exa/SEC                                            | Normal — check `pipeline/status` for progress |
+| Score is `null` for a firm     | Fewer signals than `minSignalsForScore` (default: 1)                       | Run collection first, or lower threshold      |
+| Schema drift after code change | `synchronize: true` only in development                                    | Restart the app to apply entity changes       |
