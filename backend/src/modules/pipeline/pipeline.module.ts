@@ -12,6 +12,8 @@ import { ScoreEvidence } from '../../database/entities/score-evidence.entity.js'
 import { ScrapeJob } from '../../database/entities/scrape-job.entity.js';
 
 import { PipelineController } from './pipeline.controller.js';
+import { PipelineOrchestratorService } from './pipeline-orchestrator.service.js';
+import { PipelineCronService } from './pipeline-cron.service.js';
 
 import { SeedingService, SEEDING_QUEUE } from './seeding/seeding.service.js';
 import { SeedingProcessor } from './seeding/seeding.processor.js';
@@ -80,6 +82,10 @@ import { PortfolioStrategyDimension } from './scoring/dimensions/portfolio-strat
   ],
   controllers: [PipelineController],
   providers: [
+    // Orchestration & scheduling
+    PipelineOrchestratorService,
+    PipelineCronService,
+
     // Seeding
     SeedingService,
     SeedingProcessor,
@@ -124,6 +130,7 @@ import { PortfolioStrategyDimension } from './scoring/dimensions/portfolio-strat
     PortfolioStrategyDimension,
   ],
   exports: [
+    PipelineOrchestratorService,
     SeedingService,
     CollectionService,
     PeopleCollectionService,
