@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { ExtractionPipelineService } from './extraction-pipeline.service.js';
 import { EXTRACTION_QUEUE } from '../collection/collection.service.js';
+import { PipelineOrchestratorService } from '../pipeline-orchestrator.service.js';
 import { JobLogger } from '../../../common/utils/index.js';
 
 export interface ExtractionJobData {
@@ -23,7 +24,10 @@ export class ExtractionProcessor extends WorkerHost {
   private readonly logger = new Logger(ExtractionProcessor.name);
   private readonly jobLogger = new JobLogger(ExtractionProcessor.name);
 
-  constructor(private readonly extractionPipeline: ExtractionPipelineService) {
+  constructor(
+    private readonly extractionPipeline: ExtractionPipelineService,
+    private readonly orchestrator: PipelineOrchestratorService,
+  ) {
     super();
   }
 
@@ -49,6 +53,8 @@ export class ExtractionProcessor extends WorkerHost {
       this.logger.error(`Extraction failed for ${firmName}: ${error}`);
       this.jobLogger.error(`Extraction failed for ${firmName}: ${error}`);
       throw error;
+    } finally {
+      await this.orchestrator.onExtractionComplete(firmId);
     }
   }
 }

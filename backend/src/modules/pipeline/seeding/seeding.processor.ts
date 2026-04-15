@@ -2,6 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { SeedingService, SEEDING_QUEUE } from './seeding.service.js';
+import { PipelineOrchestratorService } from '../pipeline-orchestrator.service.js';
 import { JobLogger } from '../../../common/utils/index.js';
 
 export interface SeedingJobData {
@@ -13,7 +14,10 @@ export class SeedingProcessor extends WorkerHost {
   private readonly logger = new Logger(SeedingProcessor.name);
   private readonly jobLogger = new JobLogger(SeedingProcessor.name);
 
-  constructor(private readonly seedingService: SeedingService) {
+  constructor(
+    private readonly seedingService: SeedingService,
+    private readonly orchestrator: PipelineOrchestratorService,
+  ) {
     super();
   }
 
@@ -31,6 +35,26 @@ export class SeedingProcessor extends WorkerHost {
         targetFirmCount,
         String(job.id),
       );
+
+      if (this.orchestrator.isAutoChainEnabled()) {
+        this.logger.log(
+          `Seeding complete — auto-chaining to collection stage`,
+        );
+        this.jobLogger.log(
+          `Seeding complete — auto-chaining to collection stage`,
+        );
+        const collectionResult =
+          await this.orchestrator.triggerCollectionForAllFirms();
+        return {
+          success: true,
+          ...result,
+          autoChain: {
+            collectionTriggered: true,
+            ...collectionResult,
+          },
+        };
+      }
+
       return { success: true, ...result };
     } catch (error) {
       this.logger.error('Seeding job failed', {

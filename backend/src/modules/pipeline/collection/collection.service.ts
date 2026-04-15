@@ -26,6 +26,7 @@ import { HiringCollector } from './collectors/hiring.collector.js';
 import { ConferenceCollector } from './collectors/conference.collector.js';
 import { WebsiteCollector } from './collectors/website.collector.js';
 import { LinkedInCollector } from './collectors/linkedin.collector.js';
+import { PipelineOrchestratorService } from '../pipeline-orchestrator.service.js';
 
 export const COLLECTION_QUEUE = 'signal-collection';
 export const EXTRACTION_QUEUE = 'extraction';
@@ -46,6 +47,7 @@ export class CollectionService {
     private readonly jobRepo: Repository<ScrapeJob>,
     @InjectQueue(EXTRACTION_QUEUE)
     private readonly extractionQueue: Queue,
+    private readonly orchestrator: PipelineOrchestratorService,
     private readonly newsCollector: NewsCollector,
     private readonly hiringCollector: HiringCollector,
     private readonly conferenceCollector: ConferenceCollector,
@@ -160,6 +162,12 @@ export class CollectionService {
             opts: { jobId: uuidv7() },
           })),
         );
+        await this.orchestrator.trackExtractionBatch(
+          firmId,
+          savedSources.length,
+        );
+      } else {
+        await this.orchestrator.onCollectionCompleteNoExtractions(firmId);
       }
 
       job.status = JobStatus.COMPLETED;

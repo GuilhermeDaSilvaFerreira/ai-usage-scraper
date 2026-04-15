@@ -123,7 +123,7 @@ backend/
     ├── main.ts                             Entry point: port, Swagger, global ValidationPipe
     ├── app.module.ts                       Root module wiring all sub-modules
     │
-    ├── config/                             Typed config namespaces (database, redis, app, llm, scrapers)
+    ├── config/                             Typed config namespaces (database, redis, app, llm, scrapers, pipeline)
     │
     ├── common/
     │   ├── enums/                          FirmType, SignalType, SourceType, ExtractionMethod, JobType, etc.
@@ -145,6 +145,8 @@ backend/
         ├── rankings/                       GET /api/rankings — ranked firms, dimension breakdown
         └── pipeline/
             ├── pipeline.controller.ts      POST seed/collect/score/rescore, GET status
+            ├── pipeline-orchestrator.service.ts  Auto-chains stages via Redis counters
+            ├── pipeline-cron.service.ts     Weekly scheduled full pipeline run
             ├── seeding/                    Stage 1: three sources + entity resolution + enrichment
             ├── collection/                 Stage 2: BullMQ processors + 5 signal collectors + 2 people collectors
             ├── extraction/                 Stage 3: layered pipeline + 4 extractors
@@ -299,6 +301,10 @@ The extraction pipeline cascades from cheap (regex) to expensive (LLM). The LLM 
 
 Long-running pipeline stages (seeding, collection, extraction, scoring) are processed through BullMQ queues. This provides retry support (3 attempts with exponential backoff for collection), concurrency control (10 workers per queue), and progress monitoring via the status endpoint.
 
+### Automated stage chaining
+
+The `PipelineOrchestratorService` chains stages at the process level: seeding auto-triggers collection, and extraction completion auto-triggers per-firm scoring via atomic Redis counters. This avoids TypeORM subscriber complexity while providing reliable "all done" coordination. Auto-chaining is toggleable via `PIPELINE_AUTO_CHAIN` for debugging. A `PipelineCronService` runs the full pipeline on a configurable weekly schedule.
+
 ### UUID v7 primary keys
 
 All entities use UUID v7 (time-ordered UUIDs), which preserves insertion order while avoiding sequential ID enumeration.
@@ -310,6 +316,7 @@ flowchart TD
     AppModule --> ConfigModule
     AppModule --> TypeOrmModule
     AppModule --> BullModule
+    AppModule --> ScheduleModule
     AppModule --> ExaModule
     AppModule --> OpenAIModule
     AppModule --> AnthropicModule
@@ -329,6 +336,7 @@ flowchart TD
     RankingsModule -.->|TypeORM| DB3[(firm_scores)]
     PipelineModule -.->|TypeORM| DB4[(all entities)]
     PipelineModule -.->|BullMQ| REDIS[(Redis queues)]
+    PipelineModule -.->|"Cron + Orchestrator"| REDIS
 ```
 
 ## Environment Variables
@@ -350,3 +358,6 @@ flowchart TD
 | `PORT` | No | `3000` | Application port |
 | `NODE_ENV` | No | `development` | `development` enables schema sync + query logging |
 | `EXTRACTION_CONFIDENCE_THRESHOLD` | No | `0.5` | Min confidence for extraction results (0–1) |
+| `PIPELINE_AUTO_CHAIN` | No | `true` | Enable automatic stage chaining (set `false` for manual mode) |
+| `PIPELINE_CRON_SCHEDULE` | No | `0 0 * * 0` | Cron expression for scheduled pipeline runs (default: Sunday midnight) |
+| `PIPELINE_SEED_TARGET` | No | `50` | Target firm count for cron-triggered seeding |

@@ -1,6 +1,6 @@
 # Data Pipeline
 
-The system operates as a four-stage pipeline. Each stage can be triggered independently, and all stages run asynchronously via BullMQ queues.
+The system operates as a four-stage pipeline. Stages are **automatically chained** so that completing one stage triggers the next. Each stage can also be triggered independently via the REST API for manual re-runs. All stages run asynchronously via BullMQ queues.
 
 ```mermaid
 flowchart LR
@@ -246,15 +246,18 @@ Scoring runs are tagged with a `version` string (e.g. `v1.0`, `v2.0-talent-heavy
 
 ```mermaid
 flowchart LR
+    CRON["Cron Job\n(weekly)"] -->|auto| SDQ
     API1["/api/pipeline/seed"] --> SDQ["seeding\n(concurrency: 3)"]
+    SDQ -->|"auto-chain"| SCQ
     API2["/api/pipeline/collect"] --> SCQ["signal-collection\n(concurrency: 10)"]
     API2 --> PCQ["people-collection\n(concurrency: 10)"]
     SCQ --> EXQ["extraction\n(concurrency: 10)"]
+    EXQ -->|"auto-chain\n(per firm)"| SCRQ
     API3["/api/pipeline/score"] --> SCRQ["scoring\n(concurrency: 5)"]
 
+    SDQ -->|"auto-chain"| PCQ
     PCQ --> PEOPLE[(people)]
     EXQ --> SIGNALS[(firm_signals)]
-    SIGNALS --> SCRQ
     SCRQ --> SCORES[(firm_scores)]
 ```
 
@@ -268,21 +271,24 @@ flowchart LR
 
 ---
 
-## Full Pipeline Sequence
+## Full Pipeline Sequence (Automated)
+
+The full pipeline can be triggered by a single API call (`POST /pipeline/seed`) or by the weekly cron job. Each stage automatically chains to the next via the `PipelineOrchestratorService`. Manual endpoints remain available for re-triggering individual stages.
 
 ```mermaid
 sequenceDiagram
-    participant User
+    participant Cron as Cron / User
     participant API
+    participant Orch as Orchestrator
     participant Redis as Redis / BullMQ
     participant DB as PostgreSQL
     participant Exa as Exa API
     participant SEC as SEC EDGAR
     participant LLM as Anthropic / OpenAI
 
-    User->>API: POST /pipeline/seed
+    Cron->>API: POST /pipeline/seed (or cron trigger)
     API->>Redis: Enqueue seeding job
-    API-->>User: { job_id }
+    API-->>Cron: { job_id }
 
     loop Up to 5 rounds
         Redis->>SEC: Search Form ADV filings
@@ -292,14 +298,14 @@ sequenceDiagram
     Redis->>Exa: Enrich firms with gaps
     Redis->>DB: Update firm data
 
-    User->>API: POST /pipeline/collect
-    API->>Redis: Enqueue N signal + N people jobs
-    API-->>User: { firm_count, signal_job_count, people_job_count }
+    Note over Orch: Seeding complete — auto-chain
+    Orch->>Redis: Enqueue N signal + N people jobs
 
     par Signal collection (per firm)
         Redis->>Exa: News, hiring, conference queries
         Redis->>DB: Save data_sources (deduplicated)
         Redis->>Redis: Enqueue extraction jobs
+        Orch->>Redis: Track pending extractions (counter)
     and People collection (per firm)
         Redis->>Exa: LinkedIn leadership queries
         Redis->>DB: Save people directly
@@ -311,16 +317,73 @@ sequenceDiagram
             Redis->>LLM: Structured extraction
         end
         Redis->>DB: Save firm_signals
+        Orch->>Redis: Decrement extraction counter
     end
 
-    User->>API: POST /pipeline/score
-    API->>Redis: Enqueue scoring job
-    API-->>User: { job_id }
+    Note over Orch: All extractions for firm done (counter = 0)
+    Orch->>Redis: Enqueue scoring job for firm
+
     Redis->>DB: Read firm_signals
     Redis->>DB: Write firm_scores + score_evidence
     Redis->>DB: Compute ranks
 
-    User->>API: GET /rankings
+    Cron->>API: GET /rankings
     API->>DB: Query firm_scores ORDER BY rank
-    API-->>User: Ranked firm list
+    API-->>Cron: Ranked firm list
 ```
+
+## Manual Endpoints (still available)
+
+All original endpoints remain functional for manual re-triggers:
+
+| Endpoint | Use case |
+| -------- | -------- |
+| `POST /api/pipeline/seed` | Re-run seeding (auto-chains to collection if enabled) |
+| `POST /api/pipeline/collect` | Re-collect all firms (auto-chains to scoring per firm) |
+| `POST /api/pipeline/:firm_id/collect` | Re-collect a single firm |
+| `POST /api/pipeline/score` | Re-score all firms |
+| `POST /api/pipeline/rescore` | Re-score with new weights (no re-collection) |
+| `GET /api/pipeline/status` | Queue health and recent jobs |
+
+---
+
+## Automated Pipeline Chaining
+
+The `PipelineOrchestratorService` automatically chains stages so that completing one triggers the next. This is enabled by default and controlled via the `PIPELINE_AUTO_CHAIN` env var.
+
+### Chain 1: Seeding → Collection
+
+After the seeding processor finishes (firms discovered + enriched), the orchestrator queries all active firms that haven't been collected in the last 24 hours and enqueues `signal-collection` + `people-collection` jobs for each.
+
+### Chain 2: Collection → Extraction (pre-existing)
+
+Signal collection already enqueues extraction jobs inline for each new `data_sources` row. No additional wiring was needed.
+
+### Chain 3: Extraction → Scoring (per firm)
+
+When collection enqueues extraction jobs for a firm, it also sets an atomic Redis counter (`pipeline:firm:{firmId}:pending_extractions`). Each extraction processor decrements the counter on completion (success or failure). When the counter reaches zero, the orchestrator enqueues a scoring job for that firm.
+
+If collection produces zero new data sources for a firm (all content was deduplicated), the orchestrator checks whether the firm has existing signals and triggers scoring directly.
+
+### Reliability
+
+- **Counter TTL**: Redis keys expire after 24 hours to prevent stuck counters from crashes.
+- **Failure handling**: Extraction failures still decrement the counter, so scoring triggers with whatever signals were successfully extracted.
+- **Deduplication**: Before enqueuing a scoring job, the orchestrator checks if one is already waiting/active for the same firm.
+- **Toggle**: Set `PIPELINE_AUTO_CHAIN=false` to disable all chaining and revert to fully manual operation.
+
+---
+
+## Scheduled Execution
+
+The `PipelineCronService` runs the full pipeline on a configurable schedule using `@nestjs/schedule`. When the cron fires, it enqueues a seeding job which auto-chains through the entire pipeline.
+
+### Configuration
+
+| Variable | Default | Description |
+| -------- | ------- | ----------- |
+| `PIPELINE_CRON_SCHEDULE` | `0 0 * * 0` (Sunday midnight) | Cron expression for the scheduled pipeline run |
+| `PIPELINE_SEED_TARGET` | `50` | Target number of firms in the DB for seeding |
+| `PIPELINE_AUTO_CHAIN` | `true` | Enable/disable automatic stage chaining |
+
+The schedule is registered dynamically at startup via `SchedulerRegistry`, so it reads the env var at boot time. To change the schedule, update the env var and restart the application.

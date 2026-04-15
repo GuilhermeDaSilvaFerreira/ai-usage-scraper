@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
+import { ScheduleModule } from '@nestjs/schedule';
 import {
   appConfig,
   databaseConfig,
   llmConfig,
+  pipelineConfig,
   redisConfig,
   scrapersConfig,
 } from './config/index.js';
@@ -22,7 +24,7 @@ import { SecEdgarModule } from './integrations/sec-edgar/sec-edgar.module.js';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, llmConfig, databaseConfig, redisConfig, scrapersConfig],
+      load: [appConfig, llmConfig, databaseConfig, pipelineConfig, redisConfig, scrapersConfig],
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
@@ -38,6 +40,7 @@ import { SecEdgarModule } from './integrations/sec-edgar/sec-edgar.module.js';
         },
       }),
     }),
+    ScheduleModule.forRoot(),
     ExaModule,
     OpenAIModule,
     AnthropicModule,
