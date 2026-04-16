@@ -1,5 +1,4 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { ExtractionPipelineService } from './extraction-pipeline.service.js';
 import { EXTRACTION_QUEUE } from '../collection/collection.service.js';
@@ -21,8 +20,7 @@ export interface ExtractionJobData {
   lockRenewTime: 150000,
 })
 export class ExtractionProcessor extends WorkerHost {
-  private readonly logger = new Logger(ExtractionProcessor.name);
-  private readonly jobLogger = new JobLogger(ExtractionProcessor.name);
+  private readonly logger = new JobLogger(ExtractionProcessor.name);
 
   constructor(
     private readonly extractionPipeline: ExtractionPipelineService,
@@ -35,7 +33,6 @@ export class ExtractionProcessor extends WorkerHost {
     const { dataSourceId, firmId, firmName, content, url, sourceType } =
       job.data;
     this.logger.log(`Processing extraction for ${firmName} from ${url}`);
-    this.jobLogger.log(`Processing extraction for ${firmName} from ${url}`);
 
     try {
       const signals = await this.extractionPipeline.process(
@@ -51,7 +48,6 @@ export class ExtractionProcessor extends WorkerHost {
       };
     } catch (error) {
       this.logger.error(`Extraction failed for ${firmName}: ${error}`);
-      this.jobLogger.error(`Extraction failed for ${firmName}: ${error}`);
       throw error;
     } finally {
       await this.orchestrator.onExtractionComplete(firmId);

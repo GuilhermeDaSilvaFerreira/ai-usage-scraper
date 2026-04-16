@@ -1,7 +1,12 @@
 import { Controller, Get, Query as QueryDecorator } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RankingsService } from './rankings.service.js';
-import { QueryRankingsDto, DimensionBreakdownQueryDto } from './dto/index.js';
+import {
+  QueryRankingsDto,
+  DimensionBreakdownQueryDto,
+  PaginatedRankingsResponseDto,
+  DimensionBreakdownItemDto,
+} from './dto/index.js';
 
 @ApiTags('Rankings')
 @Controller('rankings')
@@ -18,8 +23,11 @@ export class RankingsController {
   @ApiResponse({
     status: 200,
     description: 'Paginated ranked list of firms by AI maturity',
+    type: PaginatedRankingsResponseDto,
   })
-  getRankings(@QueryDecorator() query: QueryRankingsDto) {
+  getRankings(
+    @QueryDecorator() query: QueryRankingsDto,
+  ): Promise<PaginatedRankingsResponseDto> {
     return this.rankingsService.getRankings(query);
   }
 
@@ -31,8 +39,14 @@ export class RankingsController {
       '(AI talent, public activity, hiring, thought leadership, vendor partnerships, portfolio strategy). ' +
       'Useful for understanding which firms lead in specific areas of AI maturity.',
   })
-  @ApiResponse({ status: 200, description: 'Top firms per scoring dimension' })
-  getDimensionBreakdown(@QueryDecorator() query: DimensionBreakdownQueryDto) {
+  @ApiResponse({
+    status: 200,
+    description: 'Top firms per scoring dimension',
+    type: [DimensionBreakdownItemDto],
+  })
+  getDimensionBreakdown(
+    @QueryDecorator() query: DimensionBreakdownQueryDto,
+  ): Promise<DimensionBreakdownItemDto[]> {
     return this.rankingsService.getDimensionBreakdown(
       query.score_version || 'v1.0',
     );

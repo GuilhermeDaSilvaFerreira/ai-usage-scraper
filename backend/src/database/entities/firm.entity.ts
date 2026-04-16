@@ -22,13 +22,13 @@ import { UuidV7Entity } from './base.entity.js';
 export class Firm extends UuidV7Entity {
   @Column({ type: 'varchar', length: 500 })
   @Index()
-  name!: string;
+  name: string;
 
   @Column({ type: 'varchar', length: 500, unique: true })
-  slug!: string;
+  slug: string;
 
   @Column({ type: 'varchar', length: 1000, nullable: true })
-  website!: string | null;
+  website: string | null;
 
   @Column({
     type: 'numeric',
@@ -36,60 +36,60 @@ export class Firm extends UuidV7Entity {
     scale: 2,
     nullable: true,
   })
-  aum_usd!: number | null;
+  aum_usd: number | null;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
-  aum_source!: string | null;
+  aum_source: string | null;
 
   @Column({ type: 'enum', enum: FirmType, nullable: true })
-  firm_type!: FirmType | null;
+  firm_type: FirmType | null;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
-  headquarters!: string | null;
+  headquarters: string | null;
 
   @Column({ type: 'int', nullable: true })
-  founded_year!: number | null;
+  founded_year: number | null;
 
   @Column({ type: 'text', nullable: true })
-  description!: string | null;
+  description: string | null;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  sec_crd_number!: string | null;
+  sec_crd_number: string | null;
 
   @Column({ type: 'boolean', default: true })
-  is_active!: boolean;
+  is_active: boolean;
 
   @Column({ type: 'timestamptz', nullable: true })
-  last_collected_at!: Date | null;
+  last_collected_at: Date | null;
 
   @Column({ type: 'uuid', nullable: true })
-  data_source_id!: string | null;
+  data_source_id: string | null;
 
   @ManyToOne(() => DataSource, (ds) => ds.firms, { nullable: true })
   @JoinColumn({ name: 'data_source_id' })
-  data_source!: DataSource | null;
+  data_source: DataSource | null;
 
   @CreateDateColumn()
-  created_at!: Date;
+  created_at: Date;
 
   @UpdateDateColumn()
-  updated_at!: Date;
+  updated_at: Date;
 
   @OneToMany(() => FirmAlias, (alias) => alias.firm)
-  aliases!: FirmAlias[];
+  aliases: FirmAlias[];
 
   @OneToMany(() => Person, (person) => person.firm)
-  people!: Person[];
+  people: Person[];
 
   @OneToMany(() => FirmSignal, (signal) => signal.firm)
-  signals!: FirmSignal[];
+  signals: FirmSignal[];
 
   @OneToMany(() => FirmScore, (score) => score.firm)
-  scores!: FirmScore[];
+  scores: FirmScore[];
 
   @OneToMany(() => ScrapeJob, (job) => job.firm)
-  scrape_jobs!: ScrapeJob[];
+  scrape_jobs: ScrapeJob[];
 
   @OneToMany(() => OutreachCampaign, (campaign) => campaign.firm)
-  outreach_campaigns!: OutreachCampaign[];
+  outreach_campaigns: OutreachCampaign[];
 }

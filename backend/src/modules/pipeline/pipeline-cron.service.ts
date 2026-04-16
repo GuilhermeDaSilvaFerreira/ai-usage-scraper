@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -12,8 +12,7 @@ const CRON_JOB_NAME = 'pipeline-full-run';
 
 @Injectable()
 export class PipelineCronService implements OnModuleInit {
-  private readonly logger = new Logger(PipelineCronService.name);
-  private readonly jobLogger = new JobLogger(PipelineCronService.name);
+  private readonly logger = new JobLogger(PipelineCronService.name);
   private readonly cronSchedule: string;
   private readonly seedTarget: number;
 
@@ -48,9 +47,6 @@ export class PipelineCronService implements OnModuleInit {
     this.logger.log(
       `Cron trigger: starting full pipeline (seed target: ${this.seedTarget})`,
     );
-    this.jobLogger.log(
-      `Cron trigger: starting full pipeline (seed target: ${this.seedTarget})`,
-    );
 
     await this.seedingQueue.add(
       'seed',
@@ -59,9 +55,6 @@ export class PipelineCronService implements OnModuleInit {
     );
 
     this.logger.log(
-      'Cron trigger: seeding job enqueued — pipeline will auto-chain through collection, extraction, and scoring',
-    );
-    this.jobLogger.log(
       'Cron trigger: seeding job enqueued — pipeline will auto-chain through collection, extraction, and scoring',
     );
   }

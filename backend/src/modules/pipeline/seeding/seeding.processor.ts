@@ -1,5 +1,4 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { SeedingService, SEEDING_QUEUE } from './seeding.service.js';
 import { PipelineOrchestratorService } from '../pipeline-orchestrator.service.js';
@@ -11,8 +10,7 @@ export interface SeedingJobData {
 
 @Processor(SEEDING_QUEUE, { concurrency: 3 })
 export class SeedingProcessor extends WorkerHost {
-  private readonly logger = new Logger(SeedingProcessor.name);
-  private readonly jobLogger = new JobLogger(SeedingProcessor.name);
+  private readonly logger = new JobLogger(SeedingProcessor.name);
 
   constructor(
     private readonly seedingService: SeedingService,
@@ -26,9 +24,6 @@ export class SeedingProcessor extends WorkerHost {
     this.logger.log(
       `Processing seeding job (target: ${targetFirmCount} firms)`,
     );
-    this.jobLogger.log(
-      `Processing seeding job (target: ${targetFirmCount} firms)`,
-    );
 
     try {
       const result = await this.seedingService.seed(
@@ -38,9 +33,6 @@ export class SeedingProcessor extends WorkerHost {
 
       if (this.orchestrator.isAutoChainEnabled()) {
         this.logger.log(`Seeding complete — auto-chaining to collection stage`);
-        this.jobLogger.log(
-          `Seeding complete — auto-chaining to collection stage`,
-        );
         const collectionResult =
           await this.orchestrator.triggerCollectionForAllFirms();
         return {
@@ -56,10 +48,6 @@ export class SeedingProcessor extends WorkerHost {
       return { success: true, ...result };
     } catch (error) {
       this.logger.error('Seeding job failed', {
-        error: error.message,
-        stack: error.stack,
-      });
-      this.jobLogger.error('Seeding job failed', {
         error: error.message,
         stack: error.stack,
       });

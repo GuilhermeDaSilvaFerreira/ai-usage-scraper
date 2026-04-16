@@ -3,7 +3,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 export abstract class UuidV7Entity {
   @PrimaryColumn({ type: 'uuid' })
-  id!: string;
+  id: string;
 
   @BeforeInsert()
   generateId() {

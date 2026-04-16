@@ -1,7 +1,11 @@
 import { Controller, Get, Param, Query, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { PeopleService } from './people.service.js';
-import { QueryPeopleDto } from './dto/query-people.dto.js';
+import {
+  QueryPeopleDto,
+  PersonResponseDto,
+  PaginatedPeopleResponseDto,
+} from './dto/index.js';
 
 @ApiTags('People')
 @Controller('people')
@@ -19,8 +23,9 @@ export class PeopleController {
   @ApiResponse({
     status: 200,
     description: 'Paginated list of people with firm association',
+    type: PaginatedPeopleResponseDto,
   })
-  findAll(@Query() query: QueryPeopleDto) {
+  findAll(@Query() query: QueryPeopleDto): Promise<PaginatedPeopleResponseDto> {
     return this.peopleService.findAll(query);
   }
 }
@@ -42,9 +47,15 @@ export class FirmPeopleController {
     description: 'Firm UUID',
     format: 'uuid',
   })
-  @ApiResponse({ status: 200, description: 'List of people at the firm' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of people at the firm',
+    type: [PersonResponseDto],
+  })
   @ApiResponse({ status: 404, description: 'Firm not found' })
-  findByFirm(@Param('firmId', ParseUUIDPipe) firmId: string) {
+  findByFirm(
+    @Param('firmId', ParseUUIDPipe) firmId: string,
+  ): Promise<PersonResponseDto[]> {
     return this.peopleService.findByFirm(firmId);
   }
 }
