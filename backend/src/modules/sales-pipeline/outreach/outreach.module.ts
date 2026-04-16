@@ -26,7 +26,11 @@ import {
     BullModule.registerQueue({ name: OUTREACH_CAMPAIGNS_QUEUE }),
   ],
   controllers: [OutreachController],
-  providers: [OutreachService, OutreachMessageService, OutreachCampaignProcessor],
+  providers: [
+    OutreachService,
+    OutreachMessageService,
+    OutreachCampaignProcessor,
+  ],
   exports: [OutreachService, OutreachMessageService],
 })
 export class OutreachModule {}

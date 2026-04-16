@@ -24,8 +24,12 @@ export class PortfolioStrategyDimension extends BaseDimension {
     const initiativePoints = Math.min(portfolioInitiatives.length * 20, 60);
     rawScore += initiativePoints;
     evidence.push(
-      ...this.buildCappedEvidence(portfolioInitiatives, 20, initiativePoints, (s) =>
-        `Portfolio AI initiative: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        portfolioInitiatives,
+        20,
+        initiativePoints,
+        (s) =>
+          `Portfolio AI initiative: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 
@@ -37,8 +41,12 @@ export class PortfolioStrategyDimension extends BaseDimension {
     const caseStudyPoints = Math.min(caseStudies.length * 15, 40);
     rawScore += caseStudyPoints;
     evidence.push(
-      ...this.buildCappedEvidence(caseStudies, 15, caseStudyPoints, (s) =>
-        `Portfolio-related AI case study: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        caseStudies,
+        15,
+        caseStudyPoints,
+        (s) =>
+          `Portfolio-related AI case study: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 

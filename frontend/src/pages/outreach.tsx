@@ -46,7 +46,9 @@ export function OutreachPage() {
       setParams((prev) => ({
         ...prev,
         contact_platform:
-          value === '__all__' ? undefined : (value as 'email' | 'linkedin' | 'phone' | 'other'),
+          value === '__all__'
+            ? undefined
+            : (value as 'email' | 'linkedin' | 'phone' | 'other'),
         page: 1,
       }))
     },
@@ -116,14 +118,16 @@ export function OutreachPage() {
                     if (e.key === 'Enter') onSearchSubmit()
                   }}
                 />
-                <Button type="button" variant="outline" size="sm" onClick={onSearchSubmit}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onSearchSubmit}
+                >
                   Search
                 </Button>
               </div>
-              <Select
-                value={params.status ?? '__all__'}
-                onValueChange={onStatusFilter}
-              >
+              <Select value={params.status ?? '__all__'} onValueChange={onStatusFilter}>
                 <SelectTrigger size="sm">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>

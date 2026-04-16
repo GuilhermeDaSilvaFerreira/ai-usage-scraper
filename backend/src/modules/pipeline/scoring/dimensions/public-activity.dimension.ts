@@ -25,8 +25,12 @@ export class PublicActivityDimension extends BaseDimension {
     const newsPoints = Math.min(newsMentions.length * 8, 40);
     rawScore += newsPoints;
     evidence.push(
-      ...this.buildCappedEvidence(newsMentions, 8, newsPoints, (s) =>
-        `AI news mention: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        newsMentions,
+        8,
+        newsPoints,
+        (s) =>
+          `AI news mention: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 
@@ -36,8 +40,11 @@ export class PublicActivityDimension extends BaseDimension {
     const caseStudyPoints = Math.min(caseStudies.length * 15, 35);
     rawScore += caseStudyPoints;
     evidence.push(
-      ...this.buildCappedEvidence(caseStudies, 15, caseStudyPoints, (s) =>
-        `AI case study: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        caseStudies,
+        15,
+        caseStudyPoints,
+        (s) => `AI case study: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 
@@ -47,8 +54,12 @@ export class PublicActivityDimension extends BaseDimension {
     const linkedinPoints = Math.min(linkedinActivity.length * 5, 25);
     rawScore += linkedinPoints;
     evidence.push(
-      ...this.buildCappedEvidence(linkedinActivity, 5, linkedinPoints, (s) =>
-        `LinkedIn AI activity: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        linkedinActivity,
+        5,
+        linkedinPoints,
+        (s) =>
+          `LinkedIn AI activity: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 

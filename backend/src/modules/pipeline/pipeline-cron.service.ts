@@ -58,7 +58,11 @@ export class PipelineCronService implements OnModuleInit {
       { jobId: uuidv7(), attempts: 1, removeOnComplete: false },
     );
 
-    this.logger.log('Cron trigger: seeding job enqueued — pipeline will auto-chain through collection, extraction, and scoring');
-    this.jobLogger.log('Cron trigger: seeding job enqueued — pipeline will auto-chain through collection, extraction, and scoring');
+    this.logger.log(
+      'Cron trigger: seeding job enqueued — pipeline will auto-chain through collection, extraction, and scoring',
+    );
+    this.jobLogger.log(
+      'Cron trigger: seeding job enqueued — pipeline will auto-chain through collection, extraction, and scoring',
+    );
   }
 }

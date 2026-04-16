@@ -16,10 +16,7 @@ export function FirmTypeFilter({ value, onChange }: FirmTypeFilterProps) {
   return (
     <div className="flex w-full flex-col gap-2 sm:w-64">
       <span className="text-xs font-medium text-muted-foreground">Firm type</span>
-      <Select
-        value={value}
-        onValueChange={(v) => onChange(v as 'all' | FirmType)}
-      >
+      <Select value={value} onValueChange={(v) => onChange(v as 'all' | FirmType)}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Filter" />
         </SelectTrigger>

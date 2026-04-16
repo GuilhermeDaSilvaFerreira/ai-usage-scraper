@@ -25,8 +25,12 @@ export class ThoughtLeadershipDimension extends BaseDimension {
     const conferencePoints = Math.min(conferenceTalks.length * 15, 40);
     rawScore += conferencePoints;
     evidence.push(
-      ...this.buildCappedEvidence(conferenceTalks, 15, conferencePoints, (s) =>
-        `AI conference talk: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        conferenceTalks,
+        15,
+        conferencePoints,
+        (s) =>
+          `AI conference talk: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 
@@ -36,8 +40,12 @@ export class ThoughtLeadershipDimension extends BaseDimension {
     const podcastPoints = Math.min(podcasts.length * 12, 30);
     rawScore += podcastPoints;
     evidence.push(
-      ...this.buildCappedEvidence(podcasts, 12, podcastPoints, (s) =>
-        `AI podcast appearance: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        podcasts,
+        12,
+        podcastPoints,
+        (s) =>
+          `AI podcast appearance: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 
@@ -47,8 +55,12 @@ export class ThoughtLeadershipDimension extends BaseDimension {
     const researchPoints = Math.min(research.length * 15, 30);
     rawScore += researchPoints;
     evidence.push(
-      ...this.buildCappedEvidence(research, 15, researchPoints, (s) =>
-        `AI research publication: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        research,
+        15,
+        researchPoints,
+        (s) =>
+          `AI research publication: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 

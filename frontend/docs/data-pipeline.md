@@ -3,6 +3,7 @@
 ## Rankings (`/`)
 
 The home page. Displays an AG Grid of firms ranked by overall AI adoption score. Features:
+
 - Firm type filter dropdown (Select component).
 - Server-driven pagination (25 items per page) with PageNav.
 - Click a row to navigate to the firm detail page.
@@ -22,6 +23,7 @@ The home page. Displays an AG Grid of firms ranked by overall AI adoption score.
 ## Firm Detail (`/firms/:id`)
 
 Deep dive into a single firm. Loads firm data, people, score, and signals in parallel. Sections:
+
 - **Header** — name, badges, metadata (HQ, founded, website, AUM, SEC CRD).
 - **Score Overview** — overall score, rank, dimension breakdown with progress bars and weights.
 - **Key People** — AG Grid of AI/tech-relevant personnel with email column and outreach message generation (click a row to generate or view an LLM-powered pitch message).
@@ -48,6 +50,7 @@ Deep dive into a single firm. Loads firm data, people, score, and signals in par
 ## Pipeline (`/pipeline`)
 
 Operational dashboard. Auto-polls the status endpoint every 15 seconds with a manual refresh button. Shows:
+
 - **Queue cards** for each pipeline stage (seeding, signal collection, people collection, extraction, scoring) with badge counts for waiting, active, completed, failed, delayed.
 - **Recent jobs** AG Grid with status badges and metadata.
 

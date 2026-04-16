@@ -16,9 +16,7 @@ export type DimensionScoreJson = {
   max_possible: number
 }
 
-export type DimensionScoresJson = Partial<
-  Record<DimensionScoreKey, DimensionScoreJson>
->
+export type DimensionScoresJson = Partial<Record<DimensionScoreKey, DimensionScoreJson>>
 
 export type ScoringWeightsJson = Partial<Record<DimensionScoreKey, number>>
 

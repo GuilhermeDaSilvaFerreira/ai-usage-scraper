@@ -23,14 +23,20 @@ export function DimensionBar({ dimension }: DimensionBarProps) {
       </div>
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span>
-          Weighted: <strong className="tabular-nums">{formatScore(dimension.weighted_score)}</strong>
+          Weighted:{' '}
+          <strong className="tabular-nums">
+            {formatScore(dimension.weighted_score)}
+          </strong>
         </span>
         <span>
           Signals: <strong className="tabular-nums">{dimension.signal_count}</strong>
         </span>
         {dimension.weight != null ? (
           <span>
-            Weight: <strong className="tabular-nums">{(dimension.weight * 100).toFixed(0)}%</strong>
+            Weight:{' '}
+            <strong className="tabular-nums">
+              {(dimension.weight * 100).toFixed(0)}%
+            </strong>
           </span>
         ) : null}
       </div>
