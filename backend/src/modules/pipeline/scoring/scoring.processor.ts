@@ -1,5 +1,4 @@
 import { Processor, WorkerHost, InjectQueue } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
 import { Job, Queue } from 'bullmq';
 import { ScoringService } from './scoring.service.js';
 import {
@@ -19,8 +18,7 @@ export interface ScoringJobData {
 
 @Processor(SCORING_QUEUE, { concurrency: 5 })
 export class ScoringProcessor extends WorkerHost {
-  private readonly logger = new Logger(ScoringProcessor.name);
-  private readonly jobLogger = new JobLogger(ScoringProcessor.name);
+  private readonly logger = new JobLogger(ScoringProcessor.name);
 
   constructor(
     private readonly scoringService: ScoringService,
@@ -38,9 +36,6 @@ export class ScoringProcessor extends WorkerHost {
       this.logger.log(
         `Processing batch scoring job (version: ${scoringConfig.version})`,
       );
-      this.jobLogger.log(
-        `Processing batch scoring job (version: ${scoringConfig.version})`,
-      );
       const result = await this.scoringService.scoreAllFirms(
         scoringConfig,
         String(job.id),
@@ -50,11 +45,9 @@ export class ScoringProcessor extends WorkerHost {
 
     if (firmId) {
       this.logger.log(`Processing scoring job for firm: ${firmId}`);
-      this.jobLogger.log(`Processing scoring job for firm: ${firmId}`);
       const score = await this.scoringService.scoreFirm(firmId, scoringConfig);
       if (!score) {
         this.logger.warn(`Firm ${firmId} has no signals — skipping scoring`);
-        this.jobLogger.warn(`Firm ${firmId} has no signals — skipping scoring`);
         return { success: true, skipped: true, reason: 'no_signals' };
       }
       await this.outreachQueue.add(
@@ -71,7 +64,6 @@ export class ScoringProcessor extends WorkerHost {
     }
 
     this.logger.error('Either firmId or scoreAll must be provided');
-    this.jobLogger.error('Either firmId or scoreAll must be provided');
     throw new Error('Either firmId or scoreAll must be provided');
   }
 }

@@ -1,7 +1,14 @@
 import { Controller, Get, Param, Query, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { FirmsService } from './firms.service.js';
-import { QueryFirmsDto, FirmSignalsQueryDto } from './dto/index.js';
+import {
+  QueryFirmsDto,
+  FirmSignalsQueryDto,
+  FirmDetailResponseDto,
+  FirmScoreResponseDto,
+  PaginatedFirmsResponseDto,
+  PaginatedFirmSignalsResponseDto,
+} from './dto/index.js';
 
 @ApiTags('Firms')
 @Controller('firms')
@@ -19,8 +26,9 @@ export class FirmsController {
   @ApiResponse({
     status: 200,
     description: 'Paginated list of firms',
+    type: PaginatedFirmsResponseDto,
   })
-  findAll(@Query() query: QueryFirmsDto) {
+  findAll(@Query() query: QueryFirmsDto): Promise<PaginatedFirmsResponseDto> {
     return this.firmsService.findAll(query);
   }
 
@@ -35,9 +43,12 @@ export class FirmsController {
   @ApiResponse({
     status: 200,
     description: 'Firm detail with latest score and evidence',
+    type: FirmDetailResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Firm not found' })
-  findById(@Param('id', ParseUUIDPipe) id: string) {
+  findById(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<FirmDetailResponseDto> {
     return this.firmsService.findById(id);
   }
 
@@ -49,12 +60,16 @@ export class FirmsController {
       'Each signal includes type, extraction method, confidence score, and source reference.',
   })
   @ApiParam({ name: 'id', description: 'Firm UUID', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Paginated list of firm signals' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of firm signals',
+    type: PaginatedFirmSignalsResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Firm not found' })
   getSignals(
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: FirmSignalsQueryDto,
-  ) {
+  ): Promise<PaginatedFirmSignalsResponseDto> {
     return this.firmsService.getSignals(id, query.page || 1, query.limit || 50);
   }
 
@@ -69,9 +84,12 @@ export class FirmsController {
   @ApiResponse({
     status: 200,
     description: 'Array of score records across all versions',
+    type: [FirmScoreResponseDto],
   })
   @ApiResponse({ status: 404, description: 'Firm not found' })
-  getScores(@Param('id', ParseUUIDPipe) id: string) {
+  getScores(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<FirmScoreResponseDto[]> {
     return this.firmsService.getScores(id);
   }
 
@@ -91,12 +109,13 @@ export class FirmsController {
   @ApiResponse({
     status: 200,
     description: 'Score record with full evidence chain',
+    type: FirmScoreResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Score version not found' })
   getScoreByVersion(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('version') version: string,
-  ) {
+  ): Promise<FirmScoreResponseDto> {
     return this.firmsService.getScoreByVersion(id, version);
   }
 }

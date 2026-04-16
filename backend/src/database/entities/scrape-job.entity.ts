@@ -15,18 +15,18 @@ import { UuidV7Entity } from './base.entity.js';
 export class ScrapeJob extends UuidV7Entity {
   @Column({ type: 'uuid', nullable: true })
   @Index()
-  firm_id!: string | null;
+  firm_id: string | null;
 
   @ManyToOne(() => Firm, (firm) => firm.scrape_jobs, {
     nullable: true,
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'firm_id' })
-  firm!: Firm | null;
+  firm: Firm | null;
 
   @Column({ type: 'enum', enum: JobType })
   @Index()
-  job_type!: JobType;
+  job_type: JobType;
 
   @Column({
     type: 'enum',
@@ -34,26 +34,26 @@ export class ScrapeJob extends UuidV7Entity {
     default: JobStatus.PENDING,
   })
   @Index()
-  status!: JobStatus;
+  status: JobStatus;
 
   @Column({ type: 'varchar', length: 200, nullable: true })
-  queue_job_id!: string | null;
+  queue_job_id: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })
-  started_at!: Date | null;
+  started_at: Date | null;
 
   @Column({ type: 'timestamptz', nullable: true })
-  completed_at!: Date | null;
+  completed_at: Date | null;
 
   @Column({ type: 'text', nullable: true })
-  error_message!: string | null;
+  error_message: string | null;
 
   @Column({ type: 'int', default: 0 })
-  retry_count!: number;
+  retry_count: number;
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata!: ScrapeJobMetadataJson | null;
+  metadata: ScrapeJobMetadataJson | null;
 
   @CreateDateColumn()
-  created_at!: Date;
+  created_at: Date;
 }

@@ -17,36 +17,36 @@ export class DataSource extends UuidV7Entity {
 
   @Column({ type: 'varchar', length: 2000, nullable: true })
   @Index()
-  url!: string | null;
+  url: string | null;
 
   @Column({ type: 'varchar', length: 1000, nullable: true })
-  title!: string | null;
+  title: string | null;
 
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
-  retrieved_at!: Date;
+  retrieved_at: Date;
 
   @Column({ type: 'varchar', length: 64, nullable: true })
   @Index()
-  raw_content_hash!: string | null;
+  raw_content_hash: string | null;
 
   @Column({ type: 'text', nullable: true })
-  content_snippet!: string | null;
+  content_snippet: string | null;
 
   @Column({ type: 'float', default: 0.5 })
-  reliability_score!: number;
+  reliability_score: number;
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata!: DataSourceMetadataJson | null;
+  metadata: DataSourceMetadataJson | null;
 
   @CreateDateColumn()
-  created_at!: Date;
+  created_at: Date;
 
   @OneToMany(() => Firm, (firm) => firm.data_source)
-  firms!: Firm[];
+  firms: Firm[];
 
   @OneToMany(() => FirmSignal, (signal) => signal.data_source)
-  signals!: FirmSignal[];
+  signals: FirmSignal[];
 
   @OneToMany(() => Person, (person) => person.data_source)
-  people!: Person[];
+  people: Person[];
 }

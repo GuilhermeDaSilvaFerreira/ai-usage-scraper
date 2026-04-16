@@ -8,32 +8,32 @@ import type { DimensionScoreKey } from '../../common/interfaces/scoring.interfac
 export class ScoreEvidence extends UuidV7Entity {
   @Column({ type: 'uuid' })
   @Index()
-  firm_score_id!: string;
+  firm_score_id: string;
 
   @ManyToOne(() => FirmScore, (score) => score.evidence, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'firm_score_id' })
-  score!: FirmScore;
+  score: FirmScore;
 
   @Column({ type: 'uuid' })
-  firm_signal_id!: string;
+  firm_signal_id: string;
 
   @ManyToOne(() => FirmSignal, (signal) => signal.evidence_entries, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'firm_signal_id' })
-  signal!: FirmSignal;
+  signal: FirmSignal;
 
   @Column({ type: 'varchar', length: 200 })
-  dimension!: DimensionScoreKey;
+  dimension: DimensionScoreKey;
 
   @Column({ type: 'float', default: 0 })
-  weight_applied!: number;
+  weight_applied: number;
 
   @Column({ type: 'float', default: 0 })
-  points_contributed!: number;
+  points_contributed: number;
 
   @Column({ type: 'text', nullable: true })
-  reasoning!: string | null;
+  reasoning: string | null;
 }

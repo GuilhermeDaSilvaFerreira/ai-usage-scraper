@@ -5,11 +5,11 @@ import { ContactPlatform } from '../../../../common/enums/index.js';
 export class CreateOutreachDto {
   @ApiProperty({ description: 'Firm UUID', format: 'uuid' })
   @IsUUID()
-  firm_id!: string;
+  firm_id: string;
 
   @ApiProperty({ description: 'Person UUID', format: 'uuid' })
   @IsUUID()
-  person_id!: string;
+  person_id: string;
 
   @ApiPropertyOptional({ description: 'Analyst handling the outreach' })
   @IsOptional()

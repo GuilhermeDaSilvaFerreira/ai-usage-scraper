@@ -16,23 +16,23 @@ import { UuidV7Entity } from './base.entity.js';
 export class OutreachCampaign extends UuidV7Entity {
   @Column({ type: 'uuid' })
   @Index()
-  firm_id!: string;
+  firm_id: string;
 
   @ManyToOne(() => Firm, (firm) => firm.outreach_campaigns, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'firm_id' })
-  firm!: Firm;
+  firm: Firm;
 
   @Column({ type: 'uuid' })
   @Index()
-  person_id!: string;
+  person_id: string;
 
   @ManyToOne(() => Person, (person) => person.outreach_campaigns, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'person_id' })
-  person!: Person;
+  person: Person;
 
   @Column({
     type: 'enum',
@@ -40,33 +40,33 @@ export class OutreachCampaign extends UuidV7Entity {
     default: OutreachStatus.NOT_CONTACTED,
   })
   @Index()
-  status!: OutreachStatus;
+  status: OutreachStatus;
 
   @Column({
     type: 'enum',
     enum: ContactPlatform,
     nullable: true,
   })
-  contact_platform!: ContactPlatform | null;
+  contact_platform: ContactPlatform | null;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
-  contacted_by!: string | null;
+  contacted_by: string | null;
 
   @Column({ type: 'text', nullable: true })
-  notes!: string | null;
+  notes: string | null;
 
   @Column({ type: 'text', nullable: true })
-  outreach_message!: string | null;
+  outreach_message: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })
-  first_contact_at!: Date | null;
+  first_contact_at: Date | null;
 
   @Column({ type: 'timestamptz', nullable: true })
-  last_status_change_at!: Date | null;
+  last_status_change_at: Date | null;
 
   @CreateDateColumn()
-  created_at!: Date;
+  created_at: Date;
 
   @UpdateDateColumn()
-  updated_at!: Date;
+  updated_at: Date;
 }

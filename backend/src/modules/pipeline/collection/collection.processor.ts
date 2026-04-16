@@ -1,5 +1,4 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { CollectionService, COLLECTION_QUEUE } from './collection.service.js';
 import { JobLogger } from '../../../common/utils/index.js';
@@ -15,8 +14,7 @@ export interface CollectionJobData {
   lockRenewTime: 150000,
 })
 export class CollectionProcessor extends WorkerHost {
-  private readonly logger = new Logger(CollectionProcessor.name);
-  private readonly jobLogger = new JobLogger(CollectionProcessor.name);
+  private readonly logger = new JobLogger(CollectionProcessor.name);
 
   constructor(private readonly collectionService: CollectionService) {
     super();
@@ -25,9 +23,6 @@ export class CollectionProcessor extends WorkerHost {
   async process(job: Job<CollectionJobData>): Promise<any> {
     const { firmId, firmName } = job.data;
     this.logger.log(`Processing collection job for: ${firmName} (${firmId})`);
-    this.jobLogger.log(
-      `Processing collection job for: ${firmName} (${firmId})`,
-    );
 
     try {
       const count = await this.collectionService.collectForFirm(
@@ -37,7 +32,6 @@ export class CollectionProcessor extends WorkerHost {
       return { success: true, sourcesCollected: count };
     } catch (error) {
       this.logger.error(`Collection job failed for ${firmName}: ${error}`);
-      this.jobLogger.error(`Collection job failed for ${firmName}: ${error}`);
       throw error;
     }
   }
