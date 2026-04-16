@@ -1,0 +1,15 @@
+process.env.DB_HOST = 'localhost';
+process.env.DB_PORT = '5433';
+process.env.DB_USERNAME = 'postgres';
+process.env.DB_PASSWORD = 'postgres_test';
+process.env.DB_DATABASE = 'pe_intelligence_test';
+process.env.REDIS_HOST = 'localhost';
+process.env.REDIS_PORT = '6380';
+process.env.NODE_ENV = 'test';
+process.env.OPENAI_API_KEY = '';
+process.env.ANTHROPIC_API_KEY = '';
+process.env.EXA_API_KEY = '';
+process.env.LLM_PROVIDER = 'anthropic';
+process.env.PIPELINE_AUTO_CHAIN = 'false';
+process.env.PIPELINE_CRON_SCHEDULE = '0 0 1 1 *';
+process.env.SEC_EDGAR_USER_AGENT = 'TestBot test@example.com';
