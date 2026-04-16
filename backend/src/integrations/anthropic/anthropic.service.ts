@@ -70,4 +70,29 @@ If no AI-related signals are found, return {"signals": []}.`;
       return { signals: [] };
     }
   }
+
+  async generateCompletion(
+    systemPrompt: string,
+    userPrompt: string,
+  ): Promise<string | null> {
+    if (!this.client) {
+      this.logger.warn('Anthropic client not configured');
+      return null;
+    }
+
+    try {
+      const response = await this.client.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      });
+
+      const block = response.content[0];
+      return block?.type === 'text' ? block.text : null;
+    } catch (error) {
+      this.logger.error(`Anthropic completion failed: ${error}`);
+      return null;
+    }
+  }
 }

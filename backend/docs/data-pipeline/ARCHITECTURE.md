@@ -131,7 +131,7 @@ backend/
     │   └── utils/                          Rate limiter, text normalization, content hashing, job logger
     │
     ├── database/
-    │   └── entities/                       8 TypeORM entities (see schema below)
+    │   └── entities/                       9 TypeORM entities (see schema below)
     │
     ├── integrations/
     │   ├── exa/                            Exa API client (semantic web search)
@@ -143,6 +143,7 @@ backend/
         ├── firms/                          GET /api/firms — list, detail, signals, scores
         ├── people/                         GET /api/people — list, firm-specific people
         ├── rankings/                       GET /api/rankings — ranked firms, dimension breakdown
+        ├── sales-pipeline/outreach/        Sales outreach campaigns + LLM message generation (see sales-pipeline docs)
         └── pipeline/
             ├── pipeline.controller.ts      POST seed/collect/score/rescore, GET status
             ├── pipeline-orchestrator.service.ts  Auto-chains stages via Redis counters
@@ -162,6 +163,8 @@ erDiagram
     firms ||--o{ firm_signals : produces
     firms ||--o{ firm_scores : receives
     firms ||--o{ scrape_jobs : tracks
+    firms ||--o{ outreach_campaigns : tracks
+    people ||--o{ outreach_campaigns : targets
     data_sources ||--o{ firm_signals : sources
     data_sources ||--o{ people : sources
     firm_scores ||--o{ score_evidence : explains
@@ -201,9 +204,25 @@ erDiagram
         varchar title
         enum role_category
         varchar linkedin_url
+        varchar email
         text bio
+        text outreach_message
         uuid data_source_id FK
         float confidence
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    outreach_campaigns {
+        uuid id PK
+        uuid firm_id FK
+        uuid person_id FK
+        enum status
+        enum contact_platform
+        varchar contacted_by
+        text notes
+        timestamp first_contact_at
+        timestamp last_status_change_at
         timestamp created_at
         timestamp updated_at
     }
@@ -303,7 +322,7 @@ Long-running pipeline stages (seeding, collection, extraction, scoring) are proc
 
 ### Automated stage chaining
 
-The `PipelineOrchestratorService` chains stages at the process level: seeding auto-triggers collection, and extraction completion auto-triggers per-firm scoring via atomic Redis counters. This avoids TypeORM subscriber complexity while providing reliable "all done" coordination. Auto-chaining is toggleable via `PIPELINE_AUTO_CHAIN` for debugging. A `PipelineCronService` runs the full pipeline on a configurable weekly schedule.
+The `PipelineOrchestratorService` chains stages at the process level: seeding auto-triggers collection, and extraction completion auto-triggers per-firm scoring via atomic Redis counters. After scoring completes for a firm, the `ScoringProcessor` enqueues an `outreach-campaigns` job to automatically create outreach campaigns for all people at the firm (see [sales-pipeline architecture](../sales-pipeline/ARCHITECTURE.md)). Auto-chaining is toggleable via `PIPELINE_AUTO_CHAIN` for debugging. A `PipelineCronService` runs the full pipeline on a configurable weekly schedule.
 
 ### UUID v7 primary keys
 
@@ -325,6 +344,7 @@ flowchart TD
     AppModule --> PeopleModule
     AppModule --> RankingsModule
     AppModule --> PipelineModule
+    AppModule --> OutreachModule
 
     PipelineModule --> ExaModule
     PipelineModule --> OpenAIModule

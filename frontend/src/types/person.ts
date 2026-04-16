@@ -9,6 +9,7 @@ export type Person = {
   title: string | null
   role_category: RoleCategory
   linkedin_url: string | null
+  email: string | null
   bio: string | null
   data_source_id: string | null
   confidence: number

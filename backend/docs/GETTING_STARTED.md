@@ -38,7 +38,7 @@ ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
 SEC_EDGAR_USER_AGENT=YourCompany admin@yourcompany.com
 ```
 
-See [Architecture > Environment Variables](ARCHITECTURE.md#environment-variables) for the full reference.
+See [Architecture > Environment Variables](data-pipeline/ARCHITECTURE.md#environment-variables) for the full reference.
 
 ### 3. Start Infrastructure
 

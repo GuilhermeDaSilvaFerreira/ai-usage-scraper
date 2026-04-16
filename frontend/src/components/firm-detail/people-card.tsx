@@ -1,6 +1,9 @@
+import { useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AgGridReact } from 'ag-grid-react'
 import { Users } from 'lucide-react'
 
+import { getOutreachCampaignByPerson } from '@/api/outreach'
 import { EmptyState } from '@/components/empty-state'
 import {
   Card,
@@ -11,6 +14,7 @@ import {
 } from '@/components/ui/card'
 import { defaultColDef, defaultGridOptions, gridTheme } from '@/lib/grid'
 import type { Person } from '@/types/person'
+import type { CellClickedEvent } from 'ag-grid-community'
 
 import { peopleColDefs } from './column-defs'
 
@@ -19,6 +23,21 @@ type PeopleCardProps = {
 }
 
 export function PeopleCard({ people }: PeopleCardProps) {
+  const navigate = useNavigate()
+
+  const handleCellClicked = useCallback(
+    async (e: CellClickedEvent<Person>) => {
+      if (e.colDef.field !== 'full_name' || !e.data) return
+      try {
+        const campaign = await getOutreachCampaignByPerson(e.data.id)
+        navigate(`/campaigns/${campaign.id}`)
+      } catch {
+        // no campaign found — ignore
+      }
+    },
+    [navigate],
+  )
+
   return (
     <Card>
       <CardHeader>
@@ -27,7 +46,8 @@ export function PeopleCard({ people }: PeopleCardProps) {
           Key people
         </CardTitle>
         <CardDescription>
-          People linked to this firm for AI-related roles.
+          People linked to this firm for AI-related roles. Click a name to view
+          their outreach campaign.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -48,6 +68,7 @@ export function PeopleCard({ people }: PeopleCardProps) {
               pagination
               paginationPageSize={20}
               paginationPageSizeSelector={[10, 20, 50]}
+              onCellClicked={handleCellClicked}
             />
           </div>
         )}

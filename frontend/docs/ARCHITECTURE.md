@@ -30,9 +30,13 @@ frontend/
 ├── tsconfig.json                       Solution-style root
 ├── tsconfig.app.json                   App config (ES2023, bundler, strict)
 │
+├── docs/
+│   ├── data-pipeline.md                Page docs for Rankings, Firm Detail, Pipeline
+│   └── sales-pipeline.md              Page docs for Outreach, message generation
+│
 └── src/
     ├── main.tsx                        Entry point, TooltipProvider wrapper
-    ├── App.tsx                         Router definition (3 routes + catch-all)
+    ├── App.tsx                         Router definition (4 routes + catch-all)
     ├── index.css                       Tailwind imports, theme tokens (oklch), AG Grid theme
     │
     ├── api/                            Backend communication layer
@@ -40,18 +44,31 @@ frontend/
     │   ├── rankings.ts                 Rankings + dimension breakdown
     │   ├── firms.ts                    Firm list, detail, signals, scores
     │   ├── people.ts                   People listing
-    │   └── pipeline.ts                 Pipeline status
+    │   ├── pipeline.ts                 Pipeline status
+    │   └── outreach.ts                 Outreach campaigns + message generation
     │
     ├── pages/
     │   ├── rankings.tsx                Home — ranked firm grid with filters
-    │   ├── firm-detail.tsx             Firm drill-down: score, people, signals, evidence
-    │   └── pipeline.tsx                Queue health dashboard (auto-polls every 15s)
+    │   ├── firm-detail.tsx             Firm drill-down: score, people, signals, evidence, outreach
+    │   ├── pipeline.tsx                Queue health dashboard (auto-polls every 15s)
+    │   └── outreach.tsx                Sales outreach campaign dashboard
     │
     ├── components/
-    │   ├── layout/app-layout.tsx       Sidebar navigation + Outlet
+    │   ├── layout/app-layout.tsx       Sidebar navigation (grouped: Data Pipeline / Sales Pipeline)
     │   ├── page-nav.tsx                Pagination: page jump, prev/next, totals
     │   ├── empty-state.tsx             Dashed-border empty placeholder
-    │   └── ui/                         shadcn-generated primitives (Badge, Button, Card, etc.)
+    │   ├── ui/                         shadcn-generated primitives (Badge, Button, Card, etc.)
+    │   ├── firm-detail/                Firm detail components (header, scores, people, signals)
+    │   ├── rankings/                   Rankings table and filters
+    │   ├── pipeline/                   Pipeline queue cards and job list
+    │   └── sales-pipeline/            Outreach components (stats bar, detail card, badges)
+    │
+    ├── hooks/
+    │   ├── use-firm-detail.ts          Firm data, people, scores
+    │   ├── use-firm-signals.ts         Paginated firm signals
+    │   ├── use-pipeline-status.ts      Pipeline queue polling
+    │   ├── use-rankings.ts             Rankings with pagination
+    │   └── use-outreach.ts             Outreach campaigns and stats
     │
     ├── lib/
     │   ├── utils.ts                    cn() — clsx + tailwind-merge
@@ -60,13 +77,14 @@ frontend/
     │   └── grid.ts                     AG Grid module registration, Quartz theme, shared defaults
     │
     └── types/                          TypeScript types aligned with API response shapes
-        ├── common.ts                   Enums: FirmType, SignalType, RoleCategory, etc.
+        ├── common.ts                   Enums: FirmType, SignalType, RoleCategory, OutreachStatus, etc.
         ├── firm.ts                     Firm, FirmAlias
-        ├── person.ts                   Person
+        ├── person.ts                   Person (with email, outreach_message)
         ├── signal.ts                   FirmSignal
         ├── score.ts                    FirmScore, ScoreEvidence, DimensionScore
         ├── rankings.ts                 RankingRow, DimensionBreakdown
-        └── pipeline.ts                 QueueCounts, RecentJob, PipelineStatus
+        ├── pipeline.ts                 QueueCounts, RecentJob, PipelineStatus
+        └── outreach.ts                 OutreachCampaign, OutreachStats
 ```
 
 ## Routing
@@ -76,10 +94,15 @@ flowchart TD
     ROOT["/ (AppLayout)"] --> RANK["index → RankingsPage"]
     ROOT --> FIRM["/firms/:id → FirmDetailPage"]
     ROOT --> PIPE["/pipeline → PipelinePage"]
+    ROOT --> OUT["/outreach → OutreachPage"]
     CATCH["/* → redirect to /"]
 ```
 
-`AppLayout` provides a persistent sidebar with nav links to Rankings and Pipeline. Firm detail is reached by clicking a row in the rankings grid.
+`AppLayout` provides a persistent sidebar with nav links grouped into two sections:
+- **Data Pipeline**: Rankings, Pipeline
+- **Sales Pipeline**: Outreach
+
+Firm detail is reached by clicking a row in the rankings grid.
 
 ## Data Flow
 
@@ -112,28 +135,10 @@ No external state library. The app uses local React state only:
 
 ## Pages Detail
 
-### Rankings (`/`)
+Page-specific documentation is organized by domain:
 
-The home page. Displays an AG Grid of firms ranked by overall AI adoption score. Features:
-- Firm type filter dropdown (Select component).
-- Server-driven pagination (25 items per page) with PageNav.
-- Click a row to navigate to the firm detail page.
-- Columns: rank, firm name, type, AUM, overall score, signal count, scored date.
-
-### Firm Detail (`/firms/:id`)
-
-Deep dive into a single firm. Loads firm data, people, score, and signals in parallel. Sections:
-- **Header** — name, badges, metadata (HQ, founded, website, AUM, SEC CRD).
-- **Score Overview** — overall score, rank, dimension breakdown with progress bars and weights.
-- **Key People** — AG Grid of AI/tech-relevant personnel.
-- **Signals** — AG Grid of raw signals with server-side pagination (20 per page).
-- **Scoring Evidence** — AG Grid of evidence chain entries with client-side pagination.
-
-### Pipeline (`/pipeline`)
-
-Operational dashboard. Auto-polls the status endpoint every 15 seconds with a manual refresh button. Shows:
-- **Queue cards** for each pipeline stage (seeding, signal collection, people collection, extraction, scoring) with badge counts for waiting, active, completed, failed, delayed.
-- **Recent jobs** AG Grid with status badges and metadata.
+- **[Data Pipeline Pages](data-pipeline.md)** — Rankings, Firm Detail, Pipeline
+- **[Sales Pipeline Pages](sales-pipeline.md)** — Outreach, message generation, firm outreach card
 
 ## Scripts
 
@@ -149,7 +154,7 @@ Operational dashboard. Auto-polls the status endpoint every 15 seconds with a ma
 
 ### No state management library
 
-The app has three pages with independent data needs and no shared mutable state. Local `useState` + `useEffect` keeps things simple and avoids unnecessary abstraction.
+The app has four pages with independent data needs and no shared mutable state. Local `useState` + `useEffect` keeps things simple and avoids unnecessary abstraction.
 
 ### AG Grid for all tables
 

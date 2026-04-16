@@ -6,6 +6,7 @@ import { FirmHeader } from '@/components/firm-detail/firm-header'
 import { PeopleCard } from '@/components/firm-detail/people-card'
 import { ScoreOverviewCard } from '@/components/firm-detail/score-overview-card'
 import { SignalsCard } from '@/components/firm-detail/signals-card'
+import { FirmOutreachCard } from '@/components/sales-pipeline/firm-outreach-card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useFirmDetail } from '@/hooks/use-firm-detail'
@@ -62,6 +63,7 @@ export function FirmDetailPage() {
         onPageChange={setSignalPage}
       />
       <EvidenceCard evidence={activeScore?.evidence ?? []} />
+      <FirmOutreachCard firmId={id} />
     </div>
   )
 }

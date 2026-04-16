@@ -1,8 +1,32 @@
-import type { ColDef } from 'ag-grid-community'
+import type { ColDef, ICellRendererParams } from 'ag-grid-community'
+import { createElement } from 'react'
 
 import { formatDate, formatScore, labelFromSnake } from '@/lib/format'
 import type { Person } from '@/types/person'
 import type { ScoreEvidence } from '@/types/score'
+
+function PersonNameCell(params: ICellRendererParams<Person>) {
+  if (!params.value) return createElement('span', null, '—')
+  return createElement(
+    'span',
+    { className: 'text-primary cursor-pointer underline-offset-4 hover:underline' },
+    params.value,
+  )
+}
+
+function LinkedInCell(params: ICellRendererParams<Person>) {
+  if (!params.value) return createElement('span', null, '—')
+  return createElement(
+    'a',
+    {
+      className: 'text-primary underline-offset-4 hover:underline',
+      href: params.value,
+      target: '_blank',
+      rel: 'noreferrer',
+    },
+    'Profile',
+  )
+}
 
 export const peopleColDefs: ColDef<Person>[] = [
   {
@@ -10,6 +34,7 @@ export const peopleColDefs: ColDef<Person>[] = [
     headerName: 'Name',
     flex: 1,
     minWidth: 140,
+    cellRenderer: PersonNameCell,
   },
   {
     field: 'title',
@@ -25,6 +50,12 @@ export const peopleColDefs: ColDef<Person>[] = [
     valueFormatter: (p) => (p.value ? labelFromSnake(p.value) : '—'),
   },
   {
+    field: 'email',
+    headerName: 'Email',
+    width: 180,
+    valueFormatter: (p) => p.value ?? '—',
+  },
+  {
     field: 'confidence',
     headerName: 'Confidence',
     width: 120,
@@ -35,12 +66,8 @@ export const peopleColDefs: ColDef<Person>[] = [
     field: 'linkedin_url',
     headerName: 'LinkedIn',
     width: 110,
-    filter: false,
     sortable: false,
-    cellRenderer: (p: { value: string | null }) =>
-      p.value
-        ? `<a class="text-primary underline-offset-4 hover:underline" href="${p.value}" target="_blank" rel="noreferrer">Profile</a>`
-        : '—',
+    cellRenderer: LinkedInCell,
   },
 ]
 
