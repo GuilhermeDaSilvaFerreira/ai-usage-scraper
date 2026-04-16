@@ -33,8 +33,12 @@ export class AiTalentDimension extends BaseDimension {
     const seniorHirePoints = Math.min(seniorHires.length * 15, 45);
     rawScore += seniorHirePoints;
     evidence.push(
-      ...this.buildCappedEvidence(seniorHires, 15, seniorHirePoints, (s) =>
-        `Senior AI/tech hire detected: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        seniorHires,
+        15,
+        seniorHirePoints,
+        (s) =>
+          `Senior AI/tech hire detected: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 
@@ -44,8 +48,12 @@ export class AiTalentDimension extends BaseDimension {
     const teamGrowthPoints = Math.min(teamGrowthSignals.length * 10, 30);
     rawScore += teamGrowthPoints;
     evidence.push(
-      ...this.buildCappedEvidence(teamGrowthSignals, 10, teamGrowthPoints, (s) =>
-        `AI team growth signal: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        teamGrowthSignals,
+        10,
+        teamGrowthPoints,
+        (s) =>
+          `AI team growth signal: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 
@@ -61,8 +69,12 @@ export class AiTalentDimension extends BaseDimension {
     const generalHirePoints = Math.min(generalHires.length * 5, 25);
     rawScore += generalHirePoints;
     evidence.push(
-      ...this.buildCappedEvidence(generalHires, 5, generalHirePoints, (s) =>
-        `AI hiring signal: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        generalHires,
+        5,
+        generalHirePoints,
+        (s) =>
+          `AI hiring signal: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 

@@ -17,7 +17,5 @@ const variantMap: Record<
 }
 
 export function OutreachStatusBadge({ status }: { status: OutreachStatus }) {
-  return (
-    <Badge variant={variantMap[status] ?? 'outline'}>{labelFromSnake(status)}</Badge>
-  )
+  return <Badge variant={variantMap[status] ?? 'outline'}>{labelFromSnake(status)}</Badge>
 }

@@ -25,7 +25,14 @@ import { SecEdgarModule } from './integrations/sec-edgar/sec-edgar.module.js';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, llmConfig, databaseConfig, pipelineConfig, redisConfig, scrapersConfig],
+      load: [
+        appConfig,
+        llmConfig,
+        databaseConfig,
+        pipelineConfig,
+        redisConfig,
+        scrapersConfig,
+      ],
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],

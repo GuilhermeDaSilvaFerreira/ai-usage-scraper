@@ -26,10 +26,7 @@ export function EvidenceCard({ evidence }: EvidenceCardProps) {
   const [page, setPage] = useState(1)
 
   const totalPages = Math.max(1, Math.ceil(evidence.length / PAGE_SIZE))
-  const pagedEvidence = evidence.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE,
-  )
+  const pagedEvidence = evidence.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
     <Card>

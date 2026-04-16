@@ -8,12 +8,7 @@ import {
   Query,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { OutreachService } from './outreach.service.js';
 import { OutreachMessageService } from './outreach-message.service.js';
 import { CreateOutreachDto } from './dto/create-outreach.dto.js';
@@ -89,7 +84,9 @@ export class OutreachController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update campaign status, notes, platform, or message' })
+  @ApiOperation({
+    summary: 'Update campaign status, notes, platform, or message',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Campaign updated' })
   @ApiResponse({ status: 404, description: 'Campaign not found' })

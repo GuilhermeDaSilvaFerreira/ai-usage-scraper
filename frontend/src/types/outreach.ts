@@ -13,17 +13,17 @@ export type OutreachCampaign = {
   last_status_change_at: string | null
   created_at: string
   updated_at: string
-  firm?: {
+  firm: {
     id: string
     name: string
     slug: string
-  }
-  person?: {
+  } | null
+  person: {
     id: string
     full_name: string
     title: string | null
     email: string | null
-  }
+  } | null
 }
 
 export type OutreachStats = Record<OutreachStatus, number>

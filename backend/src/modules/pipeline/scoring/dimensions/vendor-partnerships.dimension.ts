@@ -31,8 +31,12 @@ export class VendorPartnershipsDimension extends BaseDimension {
     const partnerPoints = Math.min(uniqueVendors.size * 20, 60);
     rawScore += partnerPoints;
     evidence.push(
-      ...this.buildCappedEvidence(partnerships, 20, partnerPoints, (s) =>
-        `AI vendor partnership: ${s.signal_data?.vendor_name || 'unknown'}`,
+      ...this.buildCappedEvidence(
+        partnerships,
+        20,
+        partnerPoints,
+        (s) =>
+          `AI vendor partnership: ${s.signal_data?.vendor_name || 'unknown'}`,
       ),
     );
 
@@ -42,8 +46,12 @@ export class VendorPartnershipsDimension extends BaseDimension {
     const techStackPoints = Math.min(techStackSignals.length * 10, 40);
     rawScore += techStackPoints;
     evidence.push(
-      ...this.buildCappedEvidence(techStackSignals, 10, techStackPoints, (s) =>
-        `Tech stack signal: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        techStackSignals,
+        10,
+        techStackPoints,
+        (s) =>
+          `Tech stack signal: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 

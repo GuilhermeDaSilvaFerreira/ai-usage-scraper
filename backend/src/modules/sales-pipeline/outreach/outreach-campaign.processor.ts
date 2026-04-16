@@ -22,9 +22,7 @@ export class OutreachCampaignProcessor extends WorkerHost {
   async process(job: Job<OutreachCampaignJobData>): Promise<any> {
     const { firmId } = job.data;
 
-    this.logger.log(
-      `Creating default outreach campaigns for firm ${firmId}`,
-    );
+    this.logger.log(`Creating default outreach campaigns for firm ${firmId}`);
     this.jobLogger.log(
       `Creating default outreach campaigns for firm ${firmId}`,
     );
@@ -32,9 +30,7 @@ export class OutreachCampaignProcessor extends WorkerHost {
     const created =
       await this.outreachService.createDefaultCampaignsForFirm(firmId);
 
-    this.logger.log(
-      `Created ${created} outreach campaigns for firm ${firmId}`,
-    );
+    this.logger.log(`Created ${created} outreach campaigns for firm ${firmId}`);
     this.jobLogger.log(
       `Created ${created} outreach campaigns for firm ${firmId}`,
     );

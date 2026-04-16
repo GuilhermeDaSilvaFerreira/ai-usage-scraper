@@ -154,9 +154,7 @@ Guidelines:
       '',
       `FIRM: ${firm.name}`,
       firm.firm_type ? `TYPE: ${firm.firm_type}` : null,
-      firm.aum_usd
-        ? `AUM: $${(Number(firm.aum_usd) / 1e9).toFixed(1)}B`
-        : null,
+      firm.aum_usd ? `AUM: $${(Number(firm.aum_usd) / 1e9).toFixed(1)}B` : null,
       firm.description
         ? `DESCRIPTION: ${firm.description.slice(0, 400)}`
         : null,

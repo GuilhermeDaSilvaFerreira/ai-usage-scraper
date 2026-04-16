@@ -37,9 +37,7 @@ export class SeedingProcessor extends WorkerHost {
       );
 
       if (this.orchestrator.isAutoChainEnabled()) {
-        this.logger.log(
-          `Seeding complete — auto-chaining to collection stage`,
-        );
+        this.logger.log(`Seeding complete — auto-chaining to collection stage`);
         this.jobLogger.log(
           `Seeding complete — auto-chaining to collection stage`,
         );

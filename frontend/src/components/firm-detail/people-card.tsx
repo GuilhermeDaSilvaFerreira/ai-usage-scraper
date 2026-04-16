@@ -46,8 +46,8 @@ export function PeopleCard({ people }: PeopleCardProps) {
           Key people
         </CardTitle>
         <CardDescription>
-          People linked to this firm for AI-related roles. Click a name to view
-          their outreach campaign.
+          People linked to this firm for AI-related roles. Click a name to view their
+          outreach campaign.
         </CardDescription>
       </CardHeader>
       <CardContent>

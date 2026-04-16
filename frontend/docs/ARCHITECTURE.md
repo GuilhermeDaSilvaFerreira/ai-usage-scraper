@@ -6,19 +6,19 @@ A single-page React application that serves as an internal analyst console. It c
 
 ## Technology Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Framework | React 19 | UI rendering with React Compiler for auto-memoization |
-| Bundler | Vite 8 | Dev server with HMR, production builds, API proxy |
-| Language | TypeScript 6 | Strict type-checking, `bundler` module resolution |
-| Routing | React Router 7 | Client-side SPA routing with nested layouts |
-| Data Grids | AG Grid Community 35 | Rankings tables, signals, evidence, people, jobs |
-| UI Primitives | shadcn/ui + Radix UI | Accessible components (Button, Card, Select, Tabs, etc.) |
-| Styling | Tailwind CSS v4 | Utility-first CSS via `@tailwindcss/vite` (no config file) |
-| Icons | Lucide React | Consistent icon set |
-| HTTP | Axios | API client with base URL `/api` |
-| Font | Geist Variable | Clean variable-weight sans-serif |
-| Animations | tw-animate-css | Tailwind animation utilities |
+| Layer         | Technology           | Purpose                                                    |
+| ------------- | -------------------- | ---------------------------------------------------------- |
+| Framework     | React 19             | UI rendering with React Compiler for auto-memoization      |
+| Bundler       | Vite 8               | Dev server with HMR, production builds, API proxy          |
+| Language      | TypeScript 6         | Strict type-checking, `bundler` module resolution          |
+| Routing       | React Router 7       | Client-side SPA routing with nested layouts                |
+| Data Grids    | AG Grid Community 35 | Rankings tables, signals, evidence, people, jobs           |
+| UI Primitives | shadcn/ui + Radix UI | Accessible components (Button, Card, Select, Tabs, etc.)   |
+| Styling       | Tailwind CSS v4      | Utility-first CSS via `@tailwindcss/vite` (no config file) |
+| Icons         | Lucide React         | Consistent icon set                                        |
+| HTTP          | Axios                | API client with base URL `/api`                            |
+| Font          | Geist Variable       | Clean variable-weight sans-serif                           |
+| Animations    | tw-animate-css       | Tailwind animation utilities                               |
 
 ## Project Structure
 
@@ -99,6 +99,7 @@ flowchart TD
 ```
 
 `AppLayout` provides a persistent sidebar with nav links grouped into two sections:
+
 - **Data Pipeline**: Rankings, Pipeline
 - **Sales Pipeline**: Outreach
 
@@ -142,13 +143,13 @@ Page-specific documentation is organized by domain:
 
 ## Scripts
 
-| Script | Description |
-|--------|-------------|
-| `pnpm dev` | Start Vite dev server with HMR and API proxy |
-| `pnpm run build` | Type-check with `tsc` then build production bundle |
-| `pnpm run preview` | Serve the production build locally |
-| `pnpm run lint` | Run ESLint |
-| `pnpm run format` | Run Prettier on all files |
+| Script             | Description                                        |
+| ------------------ | -------------------------------------------------- |
+| `pnpm dev`         | Start Vite dev server with HMR and API proxy       |
+| `pnpm run build`   | Type-check with `tsc` then build production bundle |
+| `pnpm run preview` | Serve the production build locally                 |
+| `pnpm run lint`    | Run ESLint                                         |
+| `pnpm run format`  | Run Prettier on all files                          |
 
 ## Key Design Decisions
 

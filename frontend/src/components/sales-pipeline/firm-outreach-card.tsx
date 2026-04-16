@@ -48,8 +48,8 @@ export function FirmOutreachCard({ firmId }: Props) {
           Outreach campaigns
         </CardTitle>
         <CardDescription>
-          Sales outreach tracking for this firm. Campaigns are created
-          automatically after scoring.
+          Sales outreach tracking for this firm. Campaigns are created automatically after
+          scoring.
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -96,7 +96,10 @@ export const signalColDefs: ColDef[] = [
     headerName: 'Source',
     width: 220,
     valueGetter: (p) =>
-      p.data?.data_source?.title || p.data?.data_source?.url || p.data?.data_source_id || '—',
+      p.data?.data_source?.title ||
+      p.data?.data_source?.url ||
+      p.data?.data_source_id ||
+      '—',
   },
   {
     field: 'collected_at',
@@ -132,7 +135,8 @@ export const evidenceColDefs: ColDef<ScoreEvidence>[] = [
   {
     headerName: 'Signal',
     width: 160,
-    valueGetter: (p) => (p.data?.signal ? labelFromSnake(p.data.signal.signal_type) : '—'),
+    valueGetter: (p) =>
+      p.data?.signal ? labelFromSnake(p.data.signal.signal_type) : '—',
   },
   {
     headerName: 'Source',

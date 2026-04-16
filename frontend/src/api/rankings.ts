@@ -26,10 +26,7 @@ export type DimensionBreakdownRow = {
   top_firms: DimensionTopFirm[]
 }
 
-export async function getDimensionBreakdown(
-  scoreVersion?: string,
-  signal?: AbortSignal,
-) {
+export async function getDimensionBreakdown(scoreVersion?: string, signal?: AbortSignal) {
   const { data } = await api.get<DimensionBreakdownRow[]>('/rankings/dimensions', {
     params: scoreVersion ? { score_version: scoreVersion } : undefined,
     signal,

@@ -25,11 +25,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { getErrorMessage } from '@/lib/errors'
 import { labelFromSnake } from '@/lib/format'
-import {
-  OUTREACH_STATUSES,
-  CONTACT_PLATFORMS,
-  type OutreachStatus,
-} from '@/types/common'
+import { OUTREACH_STATUSES, CONTACT_PLATFORMS, type OutreachStatus } from '@/types/common'
 import type { OutreachCampaign } from '@/types/outreach'
 
 export function OutreachDetailPage() {
@@ -39,10 +35,10 @@ export function OutreachDetailPage() {
   const [error, setError] = useState<string | null>(null)
 
   const [status, setStatus] = useState<OutreachStatus>('not_contacted')
-  const [platform, setPlatform] = useState('')
-  const [contactedBy, setContactedBy] = useState('')
-  const [notes, setNotes] = useState('')
-  const [outreachMessage, setOutreachMessage] = useState('')
+  const [platform, setPlatform] = useState<string | null>(null)
+  const [contactedBy, setContactedBy] = useState<string | null>(null)
+  const [notes, setNotes] = useState<string | null>(null)
+  const [outreachMessage, setOutreachMessage] = useState<string | null>(null)
 
   const [saving, setSaving] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -58,10 +54,10 @@ export function OutreachDetailPage() {
         const data = await getOutreachCampaign(id, signal)
         setCampaign(data)
         setStatus(data.status)
-        setPlatform(data.contact_platform ?? '')
-        setContactedBy(data.contacted_by ?? '')
-        setNotes(data.notes ?? '')
-        setOutreachMessage(data.outreach_message ?? '')
+        setPlatform(data.contact_platform)
+        setContactedBy(data.contacted_by)
+        setNotes(data.notes)
+        setOutreachMessage(data.outreach_message)
       } catch (e) {
         if (signal?.aborted) return
         setError(getErrorMessage(e, 'Failed to load campaign'))
@@ -84,10 +80,10 @@ export function OutreachDetailPage() {
     if (!campaign) return false
     return (
       status !== campaign.status ||
-      (platform || null) !== (campaign.contact_platform ?? null) ||
-      (!contactedByLocked && contactedBy !== (campaign.contacted_by ?? '')) ||
-      notes !== (campaign.notes ?? '') ||
-      outreachMessage !== (campaign.outreach_message ?? '')
+      platform !== campaign.contact_platform ||
+      (!contactedByLocked && contactedBy !== campaign.contacted_by) ||
+      notes !== campaign.notes ||
+      outreachMessage !== campaign.outreach_message
     )
   }, [campaign, status, platform, contactedBy, notes, outreachMessage, contactedByLocked])
 
@@ -105,29 +101,38 @@ export function OutreachDetailPage() {
     setSaving(true)
 
     try {
-      const body: Record<string, any> = {}
+      const body: Record<string, unknown> = {}
       if (status !== campaign.status) body.status = status
-      if ((platform || null) !== (campaign.contact_platform ?? null))
-        body.contact_platform = platform || undefined
-      if (!contactedByLocked && contactedBy !== (campaign.contacted_by ?? ''))
+      if (platform !== campaign.contact_platform) body.contact_platform = platform
+      if (!contactedByLocked && contactedBy !== campaign.contacted_by)
         body.contacted_by = contactedBy
-      if (notes !== (campaign.notes ?? '')) body.notes = notes
-      if (outreachMessage !== (campaign.outreach_message ?? ''))
+      if (notes !== campaign.notes) body.notes = notes
+      if (outreachMessage !== campaign.outreach_message)
         body.outreach_message = outreachMessage
 
       const updated = await updateOutreachCampaign(id, body)
       setCampaign(updated)
       setStatus(updated.status)
-      setPlatform(updated.contact_platform ?? '')
-      setContactedBy(updated.contacted_by ?? '')
-      setNotes(updated.notes ?? '')
-      setOutreachMessage(updated.outreach_message ?? '')
+      setPlatform(updated.contact_platform)
+      setContactedBy(updated.contacted_by)
+      setNotes(updated.notes)
+      setOutreachMessage(updated.outreach_message)
     } catch (e) {
       setSaveError(getErrorMessage(e, 'Failed to save changes'))
     } finally {
       setSaving(false)
     }
-  }, [id, campaign, status, platform, contactedBy, notes, outreachMessage, statusChanged, contactedByLocked])
+  }, [
+    id,
+    campaign,
+    status,
+    platform,
+    contactedBy,
+    notes,
+    outreachMessage,
+    statusChanged,
+    contactedByLocked,
+  ])
 
   const handleGenerate = useCallback(async () => {
     if (!id) return
@@ -137,10 +142,10 @@ export function OutreachDetailPage() {
       const updated = await generateCampaignMessage(id)
       setCampaign(updated)
       setStatus(updated.status)
-      setPlatform(updated.contact_platform ?? '')
-      setContactedBy(updated.contacted_by ?? '')
-      setNotes(updated.notes ?? '')
-      setOutreachMessage(updated.outreach_message ?? '')
+      setPlatform(updated.contact_platform)
+      setContactedBy(updated.contacted_by)
+      setNotes(updated.notes)
+      setOutreachMessage(updated.outreach_message)
     } catch (e) {
       setSaveError(getErrorMessage(e, 'Failed to generate message'))
     } finally {
@@ -206,9 +211,7 @@ export function OutreachDetailPage() {
             View firm
           </Link>
         )}
-        {campaign.person?.email && (
-          <span>Email: {campaign.person.email}</span>
-        )}
+        {campaign.person?.email && <span>Email: {campaign.person.email}</span>}
       </div>
 
       <Card>
@@ -222,9 +225,7 @@ export function OutreachDetailPage() {
         <CardContent className="space-y-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
-                Status
-              </label>
+              <label className="text-xs font-medium text-muted-foreground">Status</label>
               <Select
                 value={status}
                 onValueChange={(v) => setStatus(v as OutreachStatus)}
@@ -293,9 +294,7 @@ export function OutreachDetailPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              Notes
-            </label>
+            <label className="text-xs font-medium text-muted-foreground">Notes</label>
             <textarea
               rows={3}
               className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -341,11 +340,7 @@ export function OutreachDetailPage() {
           )}
 
           <div className="flex gap-2 pt-2">
-            <Button
-              size="sm"
-              disabled={!isDirty || saving}
-              onClick={handleSave}
-            >
+            <Button size="sm" disabled={!isDirty || saving} onClick={handleSave}>
               {saving ? 'Saving...' : 'Save changes'}
             </Button>
           </div>

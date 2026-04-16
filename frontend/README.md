@@ -14,17 +14,17 @@ The dev server proxies `/api` requests to `http://localhost:3000` (the backend).
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
+| Document                             | Description                                              |
+| ------------------------------------ | -------------------------------------------------------- |
 | [Architecture](docs/ARCHITECTURE.md) | Tech stack, project structure, pages, data flow, styling |
 
 ## Pages
 
-| Route | Page | Purpose |
-|-------|------|---------|
-| `/` | Rankings | Ranked firm list with type filter, AUM, scores — click a row to drill in |
+| Route        | Page        | Purpose                                                                  |
+| ------------ | ----------- | ------------------------------------------------------------------------ |
+| `/`          | Rankings    | Ranked firm list with type filter, AUM, scores — click a row to drill in |
 | `/firms/:id` | Firm Detail | Score overview, dimension breakdown, key people, signals, evidence chain |
-| `/pipeline` | Pipeline | Live queue health (polls every 15s) and recent job history |
+| `/pipeline`  | Pipeline    | Live queue health (polls every 15s) and recent job history               |
 
 ## Tech Stack
 

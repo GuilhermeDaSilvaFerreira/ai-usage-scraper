@@ -7,10 +7,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import {
-  OutreachStatus,
-  ContactPlatform,
-} from '../../common/enums/index.js';
+import { OutreachStatus, ContactPlatform } from '../../common/enums/index.js';
 import { Firm } from './firm.entity.js';
 import { Person } from './person.entity.js';
 import { UuidV7Entity } from './base.entity.js';

@@ -28,16 +28,24 @@ export class HiringSignalsDimension extends BaseDimension {
     const recentPoints = Math.min(recentHires.length * 12, 50);
     rawScore += recentPoints;
     evidence.push(
-      ...this.buildCappedEvidence(recentHires, 12, recentPoints, (s) =>
-        `Recent AI hiring signal (last 6 months): ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        recentHires,
+        12,
+        recentPoints,
+        (s) =>
+          `Recent AI hiring signal (last 6 months): ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 
     const olderPoints = Math.min(olderHires.length * 5, 25);
     rawScore += olderPoints;
     evidence.push(
-      ...this.buildCappedEvidence(olderHires, 5, olderPoints, (s) =>
-        `Historical AI hiring signal: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
+      ...this.buildCappedEvidence(
+        olderHires,
+        5,
+        olderPoints,
+        (s) =>
+          `Historical AI hiring signal: ${JSON.stringify(s.signal_data).slice(0, 200)}`,
       ),
     );
 

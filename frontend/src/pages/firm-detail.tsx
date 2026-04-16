@@ -15,8 +15,13 @@ import { useFirmSignals } from '@/hooks/use-firm-signals'
 export function FirmDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { firm, people, scoreDetail, loading, error } = useFirmDetail(id)
-  const { signals, signalPage, setSignalPage, signalTotalPages, loading: signalsLoading } =
-    useFirmSignals(id)
+  const {
+    signals,
+    signalPage,
+    setSignalPage,
+    signalTotalPages,
+    loading: signalsLoading,
+  } = useFirmSignals(id)
 
   const activeScore = scoreDetail ?? firm?.latest_score ?? null
 
