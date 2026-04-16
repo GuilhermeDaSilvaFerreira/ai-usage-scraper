@@ -55,6 +55,36 @@ export type JobType =
 
 export type JobStatus = 'pending' | 'running' | 'completed' | 'failed'
 
+export type OutreachStatus =
+  | 'not_contacted'
+  | 'first_contact_sent'
+  | 'follow_up_sent'
+  | 'replied'
+  | 'under_negotiation'
+  | 'declined'
+  | 'closed_won'
+  | 'closed_lost'
+
+export type ContactPlatform = 'email' | 'linkedin' | 'phone' | 'other'
+
+export const OUTREACH_STATUSES: { value: OutreachStatus; label: string }[] = [
+  { value: 'not_contacted', label: 'Not contacted' },
+  { value: 'first_contact_sent', label: 'First contact sent' },
+  { value: 'follow_up_sent', label: 'Follow-up sent' },
+  { value: 'replied', label: 'Replied' },
+  { value: 'under_negotiation', label: 'Under negotiation' },
+  { value: 'declined', label: 'Declined' },
+  { value: 'closed_won', label: 'Closed (won)' },
+  { value: 'closed_lost', label: 'Closed (lost)' },
+]
+
+export const CONTACT_PLATFORMS: { value: ContactPlatform; label: string }[] = [
+  { value: 'email', label: 'Email' },
+  { value: 'linkedin', label: 'LinkedIn' },
+  { value: 'phone', label: 'Phone' },
+  { value: 'other', label: 'Other' },
+]
+
 export type Paginated<T> = {
   items: T[]
   total: number

@@ -9,8 +9,10 @@ import dayjs from 'dayjs';
 import Redis from 'ioredis';
 import { Firm } from '../../database/entities/firm.entity.js';
 import { FirmSignal } from '../../database/entities/firm-signal.entity.js';
-import { COLLECTION_QUEUE } from './collection/collection.service.js';
-import { PEOPLE_COLLECTION_QUEUE } from './collection/people-collection.service.js';
+import {
+  COLLECTION_QUEUE,
+  PEOPLE_COLLECTION_QUEUE,
+} from './collection/collection.constants.js';
 import { SCORING_QUEUE } from './scoring/scoring.processor.js';
 import { JobLogger } from '../../common/utils/index.js';
 

@@ -79,4 +79,31 @@ If no AI-related signals are found, return {"signals": []}.`;
       return { signals: [] };
     }
   }
+
+  async generateCompletion(
+    systemPrompt: string,
+    userPrompt: string,
+  ): Promise<string | null> {
+    if (!this.client) {
+      this.logger.warn('OpenAI client not configured');
+      return null;
+    }
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 1024,
+      });
+
+      return response.choices[0]?.message?.content ?? null;
+    } catch (error) {
+      this.logger.error(`OpenAI completion failed: ${error}`);
+      return null;
+    }
+  }
 }

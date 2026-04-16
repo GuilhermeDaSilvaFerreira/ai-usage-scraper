@@ -33,6 +33,9 @@ class QueuesDto {
 
   @ApiProperty({ type: QueueCountsDto })
   scoring: QueueCountsDto;
+
+  @ApiProperty({ type: QueueCountsDto })
+  outreach_campaigns: QueueCountsDto;
 }
 
 class RecentJobDto {

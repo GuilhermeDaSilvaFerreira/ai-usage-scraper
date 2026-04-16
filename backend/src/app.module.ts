@@ -15,6 +15,7 @@ import { FirmsModule } from './modules/firms/firms.module.js';
 import { PeopleModule } from './modules/people/people.module.js';
 import { RankingsModule } from './modules/rankings/rankings.module.js';
 import { PipelineModule } from './modules/pipeline/pipeline.module.js';
+import { OutreachModule } from './modules/sales-pipeline/outreach/outreach.module.js';
 import { ExaModule } from './integrations/exa/exa.module.js';
 import { OpenAIModule } from './integrations/openai/openai.module.js';
 import { AnthropicModule } from './integrations/anthropic/anthropic.module.js';
@@ -49,6 +50,7 @@ import { SecEdgarModule } from './integrations/sec-edgar/sec-edgar.module.js';
     PeopleModule,
     RankingsModule,
     PipelineModule,
+    OutreachModule,
   ],
 })
 export class AppModule {}

@@ -14,6 +14,7 @@ import { Person } from './person.entity.js';
 import { FirmSignal } from './firm-signal.entity.js';
 import { FirmScore } from './firm-score.entity.js';
 import { ScrapeJob } from './scrape-job.entity.js';
+import { OutreachCampaign } from './outreach-campaign.entity.js';
 import { DataSource } from './data-source.entity.js';
 import { UuidV7Entity } from './base.entity.js';
 
@@ -88,4 +89,7 @@ export class Firm extends UuidV7Entity {
 
   @OneToMany(() => ScrapeJob, (job) => job.firm)
   scrape_jobs!: ScrapeJob[];
+
+  @OneToMany(() => OutreachCampaign, (campaign) => campaign.firm)
+  outreach_campaigns!: OutreachCampaign[];
 }

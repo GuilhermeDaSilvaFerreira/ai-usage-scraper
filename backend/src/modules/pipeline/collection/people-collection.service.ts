@@ -21,7 +21,7 @@ import { CollectedContent } from './collectors/news.collector.js';
 import { LinkedInCollector } from './collectors/linkedin.collector.js';
 import { WebsiteCollector } from './collectors/website.collector.js';
 
-export const PEOPLE_COLLECTION_QUEUE = 'people-collection';
+export { PEOPLE_COLLECTION_QUEUE } from './collection.constants.js';
 
 @Injectable()
 export class PeopleCollectionService {
@@ -179,6 +179,7 @@ export class PeopleCollectionService {
           title: person.title,
           role_category: person.roleCategory,
           linkedin_url: person.linkedinUrl,
+          email: person.email,
           data_source_id: dataSourceId,
           confidence: person.confidence,
         }),
@@ -232,6 +233,7 @@ export class PeopleCollectionService {
       title: roleTitle,
       roleCategory,
       linkedinUrl: content.url,
+      email: this.extractEmail(content.content),
       confidence: 0.75,
     };
   }
@@ -254,12 +256,17 @@ export class PeopleCollectionService {
         if (fullName.length < 3) continue;
 
         const roleCategory = this.inferRoleCategory(roleTitle);
+        const surroundingText = text.slice(
+          Math.max(0, match.index - 200),
+          match.index + match[0].length + 200,
+        );
 
         people.push({
           fullName,
           title: roleTitle,
           roleCategory,
           linkedinUrl: null,
+          email: this.extractEmail(surroundingText),
           confidence: 0.5,
         });
       }
@@ -312,6 +319,13 @@ export class PeopleCollectionService {
     return RoleCategory.OTHER;
   }
 
+  private extractEmail(text: string): string | null {
+    const match = text.match(
+      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/,
+    );
+    return match ? match[0].toLowerCase() : null;
+  }
+
   private assessReliability(content: CollectedContent): number {
     const url = content.url.toLowerCase();
     if (url.includes('linkedin.com')) return 0.7;
@@ -324,5 +338,6 @@ interface ParsedPerson {
   title: string | null;
   roleCategory: RoleCategory;
   linkedinUrl: string | null;
+  email: string | null;
   confidence: number;
 }

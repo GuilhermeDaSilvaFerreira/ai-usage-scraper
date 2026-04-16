@@ -22,6 +22,7 @@ import {
 } from './collection/collection.service.js';
 import { PEOPLE_COLLECTION_QUEUE } from './collection/people-collection.service.js';
 import { SCORING_QUEUE } from './scoring/scoring.processor.js';
+import { OUTREACH_CAMPAIGNS_QUEUE } from '../sales-pipeline/outreach/outreach-campaign.processor.js';
 import {
   ScoringConfig,
   DEFAULT_SCORING_CONFIG,
@@ -55,6 +56,8 @@ export class PipelineController {
     private readonly extractionQueue: Queue,
     @InjectQueue(SCORING_QUEUE)
     private readonly scoringQueue: Queue,
+    @InjectQueue(OUTREACH_CAMPAIGNS_QUEUE)
+    private readonly outreachCampaignsQueue: Queue,
     private readonly config: ConfigService,
     private readonly scoringService: ScoringService,
   ) {}
@@ -271,12 +274,14 @@ export class PipelineController {
       peopleCollectionCounts,
       extractionCounts,
       scoringCounts,
+      outreachCampaignsCounts,
     ] = await Promise.all([
       this.getQueueCounts(this.seedingQueue),
       this.getQueueCounts(this.signalCollectionQueue),
       this.getQueueCounts(this.peopleCollectionQueue),
       this.getQueueCounts(this.extractionQueue),
       this.getQueueCounts(this.scoringQueue),
+      this.getQueueCounts(this.outreachCampaignsQueue),
     ]);
 
     const recentJobs = await this.jobRepo.find({
@@ -292,6 +297,7 @@ export class PipelineController {
         people_collection: peopleCollectionCounts,
         extraction: extractionCounts,
         scoring: scoringCounts,
+        outreach_campaigns: outreachCampaignsCounts,
       },
       recent_jobs: recentJobs.map((j) => ({
         id: j.id,

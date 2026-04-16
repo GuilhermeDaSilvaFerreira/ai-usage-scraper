@@ -9,7 +9,6 @@ export const rankingColDefs: ColDef<RankingRow>[] = [
     headerName: 'Rank',
     width: 90,
     type: 'numericColumn',
-    filter: 'agNumberColumnFilter',
   },
   {
     field: 'firm_name',
@@ -29,7 +28,6 @@ export const rankingColDefs: ColDef<RankingRow>[] = [
     headerName: 'AUM',
     width: 130,
     type: 'numericColumn',
-    filter: 'agNumberColumnFilter',
     valueFormatter: (p) => formatAumUsd(p.value ?? null),
   },
   {
@@ -37,7 +35,6 @@ export const rankingColDefs: ColDef<RankingRow>[] = [
     headerName: 'Score',
     width: 110,
     type: 'numericColumn',
-    filter: 'agNumberColumnFilter',
     valueFormatter: (p) => formatScore(p.value),
   },
   {
@@ -45,7 +42,6 @@ export const rankingColDefs: ColDef<RankingRow>[] = [
     headerName: 'Signals',
     width: 100,
     type: 'numericColumn',
-    filter: 'agNumberColumnFilter',
   },
   {
     field: 'scored_at',

@@ -1,12 +1,13 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor, WorkerHost, InjectQueue } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bullmq';
+import { Job, Queue } from 'bullmq';
 import { ScoringService } from './scoring.service.js';
 import {
   ScoringConfig,
   DEFAULT_SCORING_CONFIG,
 } from '../../../common/interfaces/index.js';
 import { JobLogger } from '../../../common/utils/index.js';
+import { OUTREACH_CAMPAIGNS_QUEUE } from '../../sales-pipeline/outreach/outreach-campaign.processor.js';
 
 export const SCORING_QUEUE = 'scoring';
 
@@ -21,7 +22,11 @@ export class ScoringProcessor extends WorkerHost {
   private readonly logger = new Logger(ScoringProcessor.name);
   private readonly jobLogger = new JobLogger(ScoringProcessor.name);
 
-  constructor(private readonly scoringService: ScoringService) {
+  constructor(
+    private readonly scoringService: ScoringService,
+    @InjectQueue(OUTREACH_CAMPAIGNS_QUEUE)
+    private readonly outreachQueue: Queue,
+  ) {
     super();
   }
 
@@ -52,6 +57,12 @@ export class ScoringProcessor extends WorkerHost {
         this.jobLogger.warn(`Firm ${firmId} has no signals — skipping scoring`);
         return { success: true, skipped: true, reason: 'no_signals' };
       }
+      await this.outreachQueue.add(
+        'create-campaigns',
+        { firmId },
+        { jobId: `outreach-${firmId}` },
+      );
+
       return {
         success: true,
         scoreId: score.id,

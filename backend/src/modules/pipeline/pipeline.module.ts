@@ -52,6 +52,7 @@ import {
   ScoringProcessor,
   SCORING_QUEUE,
 } from './scoring/scoring.processor.js';
+import { OUTREACH_CAMPAIGNS_QUEUE } from '../sales-pipeline/outreach/outreach-campaign.processor.js';
 import { ScoringEngine } from './scoring/scoring-engine.js';
 import { AiTalentDimension } from './scoring/dimensions/ai-talent.dimension.js';
 import { PublicActivityDimension } from './scoring/dimensions/public-activity.dimension.js';
@@ -78,6 +79,7 @@ import { PortfolioStrategyDimension } from './scoring/dimensions/portfolio-strat
       { name: PEOPLE_COLLECTION_QUEUE },
       { name: EXTRACTION_QUEUE },
       { name: SCORING_QUEUE },
+      { name: OUTREACH_CAMPAIGNS_QUEUE },
     ),
   ],
   controllers: [PipelineController],

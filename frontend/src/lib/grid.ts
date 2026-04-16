@@ -17,9 +17,9 @@ export const gridTheme = themeQuartz.withParams({
 export const defaultColDef: ColDef = {
   resizable: true,
   sortable: true,
-  filter: true,
+  filter: false,
+  floatingFilter: false,
   minWidth: 80,
-  floatingFilter: true,
 }
 
 export const defaultGridOptions: GridOptions = {

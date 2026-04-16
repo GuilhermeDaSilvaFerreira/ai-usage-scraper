@@ -27,9 +27,9 @@ import { ConferenceCollector } from './collectors/conference.collector.js';
 import { WebsiteCollector } from './collectors/website.collector.js';
 import { LinkedInCollector } from './collectors/linkedin.collector.js';
 import { PipelineOrchestratorService } from '../pipeline-orchestrator.service.js';
+import { EXTRACTION_QUEUE } from './collection.constants.js';
 
-export const COLLECTION_QUEUE = 'signal-collection';
-export const EXTRACTION_QUEUE = 'extraction';
+export { COLLECTION_QUEUE, EXTRACTION_QUEUE } from './collection.constants.js';
 
 @Injectable()
 export class CollectionService {
