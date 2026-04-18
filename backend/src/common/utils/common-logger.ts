@@ -2,22 +2,22 @@ import { mkdirSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { Logger } from '@nestjs/common';
 
-export interface JobLogEntry {
+export interface CommonLogEntry {
   timestamp: string;
   level: 'log' | 'warn' | 'error' | 'debug';
   message: string;
   data?: Record<string, unknown>;
 }
 
-export class JobLogger {
+export class CommonLogger {
   private readonly filePath: string | null;
-  private readonly entries: JobLogEntry[] = [];
+  private readonly entries: CommonLogEntry[] = [];
   private readonly nestLogger: Logger;
   private readonly fileLoggingEnabled: boolean;
 
-  constructor(jobName: string, logsDir?: string) {
-    this.nestLogger = new Logger(`Job:${jobName}`);
-    this.fileLoggingEnabled = process.env.NODE_ENV === 'ev';
+  constructor(serviceName: string, logsDir?: string) {
+    this.nestLogger = new Logger(serviceName);
+    this.fileLoggingEnabled = process.env.NODE_ENV === 'development';
 
     if (this.fileLoggingEnabled) {
       const dir = logsDir || join(process.cwd(), 'logs');
@@ -25,7 +25,7 @@ export class JobLogger {
         mkdirSync(dir, { recursive: true });
       }
       const ts = new Date().toISOString().replace(/[:.]/g, '-');
-      this.filePath = join(dir, `${jobName}_${ts}.json`);
+      this.filePath = join(dir, `${serviceName}_${ts}.json`);
       writeFileSync(this.filePath, '[]', 'utf-8');
     } else {
       this.filePath = null;
@@ -53,7 +53,7 @@ export class JobLogger {
   }
 
   private append(
-    level: JobLogEntry['level'],
+    level: CommonLogEntry['level'],
     message: string,
     data?: Record<string, unknown>,
   ): void {
@@ -75,7 +75,7 @@ export class JobLogger {
         'utf-8',
       );
     } catch {
-      this.nestLogger.error(`Failed to write job log to ${this.filePath}`);
+      this.nestLogger.error(`Failed to write common log to ${this.filePath}`);
     }
   }
 

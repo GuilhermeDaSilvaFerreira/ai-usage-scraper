@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
-import { JobLogger } from './job-logger';
+import { CommonLogger } from './common-logger';
 
 jest.mock('fs', () => ({
   mkdirSync: jest.fn(),
@@ -22,7 +22,7 @@ const mockedWriteFileSync = writeFileSync as jest.MockedFunction<
   typeof writeFileSync
 >;
 
-describe('JobLogger', () => {
+describe('CommonLogger', () => {
   const originalEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
@@ -34,9 +34,9 @@ describe('JobLogger', () => {
   });
 
   describe('constructor with file logging disabled', () => {
-    it('should not create directory or file when NODE_ENV != ev', () => {
+    it('should not create directory or file when NODE_ENV != development', () => {
       process.env.NODE_ENV = 'development';
-      new JobLogger('test-job');
+      new CommonLogger('test-job');
 
       expect(mockedMkdirSync).not.toHaveBeenCalled();
       expect(mockedWriteFileSync).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('JobLogger', () => {
 
     it('should set filePath to null when file logging is disabled', () => {
       process.env.NODE_ENV = 'production';
-      const logger = new JobLogger('test-job');
+      const logger = new CommonLogger('test-job');
 
       expect(logger.getFilePath()).toBeNull();
     });
@@ -52,12 +52,12 @@ describe('JobLogger', () => {
 
   describe('constructor with file logging enabled', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'ev';
+      process.env.NODE_ENV = 'development';
     });
 
     it('should create directory if it does not exist', () => {
       mockedExistsSync.mockReturnValue(false);
-      new JobLogger('test-job', '/tmp/logs');
+      new CommonLogger('test-job', '/tmp/logs');
 
       expect(mockedMkdirSync).toHaveBeenCalledWith('/tmp/logs', {
         recursive: true,
@@ -66,14 +66,14 @@ describe('JobLogger', () => {
 
     it('should not create directory if it already exists', () => {
       mockedExistsSync.mockReturnValue(true);
-      new JobLogger('test-job', '/tmp/logs');
+      new CommonLogger('test-job', '/tmp/logs');
 
       expect(mockedMkdirSync).not.toHaveBeenCalled();
     });
 
     it('should create initial empty JSON file', () => {
       mockedExistsSync.mockReturnValue(true);
-      new JobLogger('test-job', '/tmp/logs');
+      new CommonLogger('test-job', '/tmp/logs');
 
       expect(mockedWriteFileSync).toHaveBeenCalledWith(
         expect.stringContaining('test-job_'),
@@ -84,7 +84,7 @@ describe('JobLogger', () => {
 
     it('should set filePath to a non-null value', () => {
       mockedExistsSync.mockReturnValue(true);
-      const logger = new JobLogger('test-job', '/tmp/logs');
+      const logger = new CommonLogger('test-job', '/tmp/logs');
 
       expect(logger.getFilePath()).not.toBeNull();
       expect(logger.getFilePath()).toContain('test-job_');
@@ -92,7 +92,7 @@ describe('JobLogger', () => {
 
     it('should use default logs directory when logsDir is not provided', () => {
       mockedExistsSync.mockReturnValue(false);
-      new JobLogger('test-job');
+      new CommonLogger('test-job');
 
       expect(mockedMkdirSync).toHaveBeenCalledWith(
         expect.stringContaining('logs'),
@@ -102,13 +102,13 @@ describe('JobLogger', () => {
   });
 
   describe('log methods with file logging enabled', () => {
-    let logger: JobLogger;
+    let logger: CommonLogger;
 
     beforeEach(() => {
-      process.env.NODE_ENV = 'ev';
+      process.env.NODE_ENV = 'development';
       mockedExistsSync.mockReturnValue(true);
       mockedWriteFileSync.mockClear();
-      logger = new JobLogger('test-job', '/tmp/logs');
+      logger = new CommonLogger('test-job', '/tmp/logs');
       mockedWriteFileSync.mockClear();
     });
 
@@ -189,11 +189,11 @@ describe('JobLogger', () => {
   });
 
   describe('log methods with file logging disabled', () => {
-    let logger: JobLogger;
+    let logger: CommonLogger;
 
     beforeEach(() => {
       process.env.NODE_ENV = 'development';
-      logger = new JobLogger('test-job');
+      logger = new CommonLogger('test-job');
       mockedWriteFileSync.mockClear();
     });
 
@@ -220,9 +220,9 @@ describe('JobLogger', () => {
 
   describe('error handling in flush', () => {
     it('should not throw when writeFileSync fails during flush', () => {
-      process.env.NODE_ENV = 'ev';
+      process.env.NODE_ENV = 'development';
       mockedExistsSync.mockReturnValue(true);
-      const logger = new JobLogger('test-job', '/tmp/logs');
+      const logger = new CommonLogger('test-job', '/tmp/logs');
 
       mockedWriteFileSync.mockImplementationOnce(() => {
         throw new Error('disk full');
@@ -235,14 +235,14 @@ describe('JobLogger', () => {
   describe('getFilePath', () => {
     it('should return null when file logging is disabled', () => {
       process.env.NODE_ENV = 'development';
-      const logger = new JobLogger('test-job');
+      const logger = new CommonLogger('test-job');
       expect(logger.getFilePath()).toBeNull();
     });
 
     it('should return the file path when file logging is enabled', () => {
-      process.env.NODE_ENV = 'ev';
+      process.env.NODE_ENV = 'development';
       mockedExistsSync.mockReturnValue(true);
-      const logger = new JobLogger('test-job', '/tmp/logs');
+      const logger = new CommonLogger('test-job', '/tmp/logs');
       const filePath = logger.getFilePath();
 
       expect(filePath).not.toBeNull();

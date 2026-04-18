@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -16,7 +16,7 @@ import {
 import {
   computeContentHash,
   truncate,
-  JobLogger,
+  CommonLogger,
 } from '../../../common/utils/index.js';
 import {
   NewsCollector,
@@ -33,9 +33,7 @@ export { COLLECTION_QUEUE, EXTRACTION_QUEUE } from './collection.constants.js';
 
 @Injectable()
 export class CollectionService {
-  private readonly logger = new Logger(CollectionService.name);
-  private readonly jobLogger = new JobLogger(CollectionService.name);
-
+  private readonly logger = new CommonLogger(CollectionService.name);
   constructor(
     @InjectRepository(Firm)
     private readonly firmRepo: Repository<Firm>,
@@ -58,7 +56,7 @@ export class CollectionService {
   async collectForFirm(firmId: string, queueJobId?: string): Promise<number> {
     const firm = await this.firmRepo.findOneByOrFail({ id: firmId });
     this.logger.log(`Starting signal collection for: ${firm.name}`);
-    this.jobLogger.log(`Starting signal collection for: ${firm.name}`);
+
 
     const aliases = await this.aliasRepo.find({ where: { firm_id: firmId } });
     const aliasNames = aliases
@@ -184,9 +182,7 @@ export class CollectionService {
       this.logger.log(
         `Signal collection complete for ${firm.name}: ${saved} new sources saved`,
       );
-      this.jobLogger.log(
-        `Signal collection complete for ${firm.name}: ${saved} new sources saved`,
-      );
+
       return saved;
     } catch (error) {
       job.status = JobStatus.FAILED;

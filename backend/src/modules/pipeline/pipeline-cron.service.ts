@@ -6,13 +6,13 @@ import { Queue } from 'bullmq';
 import { CronJob } from 'cron';
 import { v7 as uuidv7 } from 'uuid';
 import { SEEDING_QUEUE } from './seeding/seeding.service.js';
-import { JobLogger } from '../../common/utils/index.js';
+import { CommonLogger } from '../../common/utils/index.js';
 
 const CRON_JOB_NAME = 'pipeline-full-run';
 
 @Injectable()
 export class PipelineCronService implements OnModuleInit {
-  private readonly logger = new JobLogger(PipelineCronService.name);
+  private readonly logger = new CommonLogger(PipelineCronService.name);
   private readonly cronSchedule: string;
   private readonly seedTarget: number;
 

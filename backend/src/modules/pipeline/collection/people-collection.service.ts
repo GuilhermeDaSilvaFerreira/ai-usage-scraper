@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Firm } from '../../../database/entities/firm.entity.js';
@@ -15,7 +15,7 @@ import {
 import {
   computeContentHash,
   truncate,
-  JobLogger,
+  CommonLogger,
 } from '../../../common/utils/index.js';
 import { CollectedContent } from './collectors/news.collector.js';
 import { LinkedInCollector } from './collectors/linkedin.collector.js';
@@ -25,9 +25,7 @@ export { PEOPLE_COLLECTION_QUEUE } from './collection.constants.js';
 
 @Injectable()
 export class PeopleCollectionService {
-  private readonly logger = new Logger(PeopleCollectionService.name);
-  private readonly jobLogger = new JobLogger(PeopleCollectionService.name);
-
+  private readonly logger = new CommonLogger(PeopleCollectionService.name);
   constructor(
     @InjectRepository(Firm)
     private readonly firmRepo: Repository<Firm>,
@@ -49,7 +47,7 @@ export class PeopleCollectionService {
   ): Promise<number> {
     const firm = await this.firmRepo.findOneByOrFail({ id: firmId });
     this.logger.log(`Starting people collection for: ${firm.name}`);
-    this.jobLogger.log(`Starting people collection for: ${firm.name}`);
+
 
     const aliases = await this.aliasRepo.find({ where: { firm_id: firmId } });
     const aliasNames = aliases
@@ -145,9 +143,7 @@ export class PeopleCollectionService {
       this.logger.log(
         `People collection complete for ${firm.name}: ${savedSources.length} sources, ${peopleCreated} people`,
       );
-      this.jobLogger.log(
-        `People collection complete for ${firm.name}: ${savedSources.length} sources, ${peopleCreated} people`,
-      );
+
       return savedSources.length;
     } catch (error) {
       job.status = JobStatus.FAILED;

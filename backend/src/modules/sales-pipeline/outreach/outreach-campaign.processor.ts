@@ -1,7 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { OutreachService } from './outreach.service.js';
-import { JobLogger } from '../../../common/utils/index.js';
+import { CommonLogger } from '../../../common/utils/index.js';
 
 export const OUTREACH_CAMPAIGNS_QUEUE = 'outreach-campaigns';
 
@@ -11,7 +11,7 @@ export interface OutreachCampaignJobData {
 
 @Processor(OUTREACH_CAMPAIGNS_QUEUE, { concurrency: 5 })
 export class OutreachCampaignProcessor extends WorkerHost {
-  private readonly logger = new JobLogger(OutreachCampaignProcessor.name);
+  private readonly logger = new CommonLogger(OutreachCampaignProcessor.name);
 
   constructor(private readonly outreachService: OutreachService) {
     super();

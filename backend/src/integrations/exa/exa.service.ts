@@ -32,7 +32,14 @@ export class ExaService {
     query: string,
     options?: {
       numResults?: number;
-      category?: string;
+      category?:
+        | 'company'
+        | 'research paper'
+        | 'news'
+        | 'pdf'
+        | 'personal site'
+        | 'financial report'
+        | 'people';
       startPublishedDate?: string;
       includeDomains?: string[];
     },

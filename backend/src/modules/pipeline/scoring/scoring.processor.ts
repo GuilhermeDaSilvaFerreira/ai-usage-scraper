@@ -5,7 +5,7 @@ import {
   ScoringConfig,
   DEFAULT_SCORING_CONFIG,
 } from '../../../common/interfaces/index.js';
-import { JobLogger } from '../../../common/utils/index.js';
+import { CommonLogger } from '../../../common/utils/index.js';
 import { OUTREACH_CAMPAIGNS_QUEUE } from '../../sales-pipeline/outreach/outreach-campaign.processor.js';
 
 export const SCORING_QUEUE = 'scoring';
@@ -18,7 +18,7 @@ export interface ScoringJobData {
 
 @Processor(SCORING_QUEUE, { concurrency: 5 })
 export class ScoringProcessor extends WorkerHost {
-  private readonly logger = new JobLogger(ScoringProcessor.name);
+  private readonly logger = new CommonLogger(ScoringProcessor.name);
 
   constructor(
     private readonly scoringService: ScoringService,

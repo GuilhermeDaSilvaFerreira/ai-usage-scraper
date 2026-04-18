@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Or, Equal, Repository } from 'typeorm';
 import axios from 'axios';
@@ -10,7 +10,7 @@ import {
   webRateLimiter,
   secEdgarRateLimiter,
   extractHttpErrorDetails,
-  JobLogger,
+  CommonLogger,
 } from '../../../common/utils/index.js';
 import { ConfigService } from '@nestjs/config';
 
@@ -47,8 +47,7 @@ const FIRM_TYPE_KEYWORDS: Record<string, FirmType> = {
 
 @Injectable()
 export class FirmEnrichmentService {
-  private readonly logger = new Logger(FirmEnrichmentService.name);
-  private readonly jobLogger = new JobLogger(FirmEnrichmentService.name);
+  private readonly logger = new CommonLogger(FirmEnrichmentService.name);
   private readonly secEdgarUserAgent: string;
 
   constructor(
@@ -78,9 +77,7 @@ export class FirmEnrichmentService {
     this.logger.log(
       `Enrichment: found ${firms.length} firms with missing data`,
     );
-    this.jobLogger.log(
-      `Enrichment: found ${firms.length} firms with missing data`,
-    );
+
 
     let enriched = 0;
     let skipped = 0;
@@ -93,9 +90,7 @@ export class FirmEnrichmentService {
       this.logger.log(
         `Enrichment batch ${batchNum}/${totalBatches} (${batch.length} firms)`,
       );
-      this.jobLogger.log(
-        `Enrichment batch ${batchNum}/${totalBatches} (${batch.length} firms)`,
-      );
+
 
       const results = await Promise.allSettled(
         batch.map((firm) => {
@@ -109,7 +104,7 @@ export class FirmEnrichmentService {
         if (result.status === 'rejected') {
           failed++;
           this.logger.warn(`Enrichment failed: ${result.reason}`);
-          this.jobLogger.warn(`Enrichment failed: ${result.reason}`);
+
         } else if (result.value === 'skipped') {
           skipped++;
         } else if (result.value === true) {
@@ -123,9 +118,7 @@ export class FirmEnrichmentService {
     this.logger.log(
       `Enrichment complete: ${enriched} enriched, ${skipped} skipped, ${failed} failed`,
     );
-    this.jobLogger.log(
-      `Enrichment complete: ${enriched} enriched, ${skipped} skipped, ${failed} failed`,
-    );
+
     return { enriched, skipped, failed };
   }
 
@@ -226,9 +219,7 @@ export class FirmEnrichmentService {
       this.logger.debug(
         `Enriched "${firm.name}" — ${stillMissing.length === 0 ? 'all fields filled' : `still missing: ${stillMissing.join(', ')}`}`,
       );
-      this.jobLogger.debug(
-        `Enriched "${firm.name}" — ${stillMissing.length === 0 ? 'all fields filled' : `still missing: ${stillMissing.join(', ')}`}`,
-      );
+
     }
 
     return changed;
@@ -280,10 +271,7 @@ export class FirmEnrichmentService {
           error: error.message,
           stack: error.stack,
         });
-        this.jobLogger.error('Error enriching from Exa', {
-          error: error.message,
-          stack: error.stack,
-        });
+
       }
     }
     if (!result.website && topUrl) {
@@ -403,10 +391,7 @@ export class FirmEnrichmentService {
           error: error.message,
           stack: error.stack,
         });
-        this.jobLogger.error('Error enriching from website', {
-          error: error.message,
-          stack: error.stack,
-        });
+
       }
     }
 
@@ -437,9 +422,7 @@ export class FirmEnrichmentService {
     this.logger.debug(
       `SEC CRD: no CIK/CRD found for "${firmName}" after all strategies`,
     );
-    this.jobLogger.debug(
-      `SEC CRD: no CIK/CRD found for "${firmName}" after all strategies`,
-    );
+
     return {};
   }
 
@@ -501,9 +484,7 @@ export class FirmEnrichmentService {
         this.logger.error('Error searching Edgar company HTML', {
           ...extractHttpErrorDetails(error),
         });
-        this.jobLogger.error('Error searching Edgar company HTML', {
-          ...extractHttpErrorDetails(error),
-        });
+
         return {};
       }
     });
@@ -570,9 +551,7 @@ export class FirmEnrichmentService {
         this.logger.error('Error searching Efts broad', {
           ...extractHttpErrorDetails(error),
         });
-        this.jobLogger.error('Error searching Efts broad', {
-          ...extractHttpErrorDetails(error),
-        });
+
         return {};
       }
     });
@@ -644,9 +623,7 @@ export class FirmEnrichmentService {
         this.logger.warn('IAPD search failed', {
           ...extractHttpErrorDetails(error),
         });
-        this.jobLogger.warn('IAPD search failed', {
-          ...extractHttpErrorDetails(error),
-        });
+
         return {};
       }
     });
@@ -717,9 +694,7 @@ export class FirmEnrichmentService {
         this.logger.debug('Failed to fetch page text', {
           ...extractHttpErrorDetails(error),
         });
-        this.jobLogger.debug('Failed to fetch page text', {
-          ...extractHttpErrorDetails(error),
-        });
+
         return null;
       }
     });

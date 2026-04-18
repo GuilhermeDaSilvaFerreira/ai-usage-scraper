@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,7 +14,7 @@ import {
   PEOPLE_COLLECTION_QUEUE,
 } from './collection/collection.constants.js';
 import { SCORING_QUEUE } from './scoring/scoring.processor.js';
-import { JobLogger } from '../../common/utils/index.js';
+import { CommonLogger } from '../../common/utils/index.js';
 
 const REDIS_KEY_PREFIX = 'pipeline:firm:';
 const PENDING_EXTRACTIONS_SUFFIX = ':pending_extractions';
@@ -22,8 +22,7 @@ const COUNTER_TTL_SECONDS = 86400; // 24h
 
 @Injectable()
 export class PipelineOrchestratorService {
-  private readonly logger = new Logger(PipelineOrchestratorService.name);
-  private readonly jobLogger = new JobLogger(PipelineOrchestratorService.name);
+  private readonly logger = new CommonLogger(PipelineOrchestratorService.name);
   private readonly redis: Redis;
   private readonly autoChain: boolean;
 
@@ -75,9 +74,7 @@ export class PipelineOrchestratorService {
       this.logger.log(
         'Auto-chain: no firms need collection (all collected within 24h)',
       );
-      this.jobLogger.log(
-        'Auto-chain: no firms need collection (all collected within 24h)',
-      );
+
       return { firmCount: 0, signalJobCount: 0, peopleJobCount: 0 };
     }
 
@@ -107,9 +104,7 @@ export class PipelineOrchestratorService {
     this.logger.log(
       `Auto-chain: queued collection for ${firms.length} firms (signals + people)`,
     );
-    this.jobLogger.log(
-      `Auto-chain: queued collection for ${firms.length} firms (signals + people)`,
-    );
+
 
     return {
       firmCount: firms.length,
@@ -159,9 +154,7 @@ export class PipelineOrchestratorService {
       this.logger.log(
         `Auto-chain: no new extractions for firm ${firmId}, but existing signals found — triggering scoring`,
       );
-      this.jobLogger.log(
-        `Auto-chain: no new extractions for firm ${firmId}, but existing signals found — triggering scoring`,
-      );
+
       await this.triggerScoringForFirm(firmId);
     } else {
       this.logger.debug(
@@ -187,6 +180,6 @@ export class PipelineOrchestratorService {
     await this.scoringQueue.add('score', { firmId }, { jobId });
 
     this.logger.log(`Auto-chain: queued scoring for firm ${firmId}`);
-    this.jobLogger.log(`Auto-chain: queued scoring for firm ${firmId}`);
+
   }
 }

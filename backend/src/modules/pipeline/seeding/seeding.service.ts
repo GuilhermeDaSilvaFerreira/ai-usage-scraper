@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Firm } from '../../../database/entities/firm.entity.js';
@@ -11,7 +11,7 @@ import { JobType, JobStatus } from '../../../common/enums/job-type.enum.js';
 import {
   createSlug,
   cleanFirmName,
-  JobLogger,
+  CommonLogger,
 } from '../../../common/utils/index.js';
 import { SecEdgarSource } from './sources/sec-edgar.source.js';
 import { ExaSearchSource } from './sources/exa-search.source.js';
@@ -31,9 +31,7 @@ const MAX_ROUNDS = 5;
 
 @Injectable()
 export class SeedingService {
-  private readonly logger = new Logger(SeedingService.name);
-  private readonly jobLogger = new JobLogger(SeedingService.name);
-
+  private readonly logger = new CommonLogger(SeedingService.name);
   constructor(
     @InjectRepository(Firm)
     private readonly firmRepo: Repository<Firm>,
@@ -75,15 +73,9 @@ export class SeedingService {
       this.logger.log(
         `Starting seeding — target: ${target} total firms in DB, currently: ${existingCount}`,
       );
-      this.jobLogger.log(
-        `Starting seeding — target: ${target} total firms in DB, currently: ${existingCount}`,
-      );
 
       if (existingCount >= target) {
         this.logger.log(
-          `DB already has ${existingCount} firms (>= target ${target}). Skipping discovery, running enrichment only.`,
-        );
-        this.jobLogger.log(
           `DB already has ${existingCount} firms (>= target ${target}). Skipping discovery, running enrichment only.`,
         );
 
@@ -123,9 +115,6 @@ export class SeedingService {
         this.logger.log(
           `Round ${round}/${MAX_ROUNDS}: ${currentCount}/${target} firms in DB, need ${deficit} more`,
         );
-        this.jobLogger.log(
-          `Round ${round}/${MAX_ROUNDS}: ${currentCount}/${target} firms in DB, need ${deficit} more`,
-        );
 
         const lookupTarget = Math.ceil(deficit * (1 + round * 0.5));
         const pageOffset = round - 1;
@@ -142,9 +131,6 @@ export class SeedingService {
         this.logger.log(
           `Round ${round} raw candidates — SEC: ${secCandidates.length}, Exa: ${exaCandidates.length}, Public: ${publicCandidates.length}`,
         );
-        this.jobLogger.log(
-          `Round ${round} raw candidates — SEC: ${secCandidates.length}, Exa: ${exaCandidates.length}, Public: ${publicCandidates.length}`,
-        );
 
         const allCandidates = [
           ...secCandidates,
@@ -156,15 +142,9 @@ export class SeedingService {
         this.logger.log(
           `Round ${round} after dedup: ${merged.length} unique firms`,
         );
-        this.jobLogger.log(
-          `Round ${round} after dedup: ${merged.length} unique firms`,
-        );
 
         const selected = this.diversifiedSelect(merged, deficit);
         this.logger.log(
-          `Round ${round}: selected ${selected.length} firms to persist`,
-        );
-        this.jobLogger.log(
           `Round ${round}: selected ${selected.length} firms to persist`,
         );
 
@@ -176,23 +156,14 @@ export class SeedingService {
         this.logger.log(
           `Round ${round} result: ${created} created, ${updated} updated (DB now has ${currentCount}/${target} firms)`,
         );
-        this.jobLogger.log(
-          `Round ${round} result: ${created} created, ${updated} updated (DB now has ${currentCount}/${target} firms)`,
-        );
 
         if (created === 0) {
           consecutiveEmptyRounds++;
           this.logger.warn(
             `No new firms created this round (${consecutiveEmptyRounds} consecutive empty round(s))`,
           );
-          this.jobLogger.warn(
-            `No new firms created this round (${consecutiveEmptyRounds} consecutive empty round(s))`,
-          );
           if (consecutiveEmptyRounds >= 2) {
             this.logger.warn(
-              'Two consecutive rounds with no new firms — stopping',
-            );
-            this.jobLogger.warn(
               'Two consecutive rounds with no new firms — stopping',
             );
             break;
@@ -203,7 +174,6 @@ export class SeedingService {
       }
 
       this.logger.log('Starting firm enrichment phase...');
-      this.jobLogger.log('Starting firm enrichment phase...');
       const enrichResult = await this.firmEnrichment.enrichFirmsWithGaps();
 
       job.status = JobStatus.COMPLETED;
@@ -221,9 +191,6 @@ export class SeedingService {
       this.logger.log(
         `Seeding complete: ${totalCreated} created, ${totalUpdated} updated, ${enrichResult.enriched} enriched across ${round} round(s). DB now has ${currentCount} firms.`,
       );
-      this.jobLogger.log(
-        `Seeding complete: ${totalCreated} created, ${totalUpdated} updated, ${enrichResult.enriched} enriched across ${round} round(s). DB now has ${currentCount} firms.`,
-      );
 
       return {
         firmsCreated: totalCreated,
@@ -239,7 +206,6 @@ export class SeedingService {
       job.completed_at = new Date();
       await this.jobRepo.save(job);
       this.logger.error(`Seeding failed: ${error}`);
-      this.jobLogger.error(`Seeding failed: ${error}`);
       throw error;
     }
   }
@@ -271,9 +237,6 @@ export class SeedingService {
     }
 
     this.logger.log(
-      `Source buckets — SEC: ${buckets.sec_edgar.length}, Exa: ${buckets.exa.length}, Public: ${buckets.public_ranking.length}`,
-    );
-    this.jobLogger.log(
       `Source buckets — SEC: ${buckets.sec_edgar.length}, Exa: ${buckets.exa.length}, Public: ${buckets.public_ranking.length}`,
     );
 
@@ -318,14 +281,12 @@ export class SeedingService {
       const cleaned = cleanFirmName(candidate.name);
       if (!cleaned) {
         this.logger.debug(`Skipped invalid name: "${candidate.name}"`);
-        this.jobLogger.debug(`Skipped invalid name: "${candidate.name}"`);
         continue;
       }
 
       const slug = createSlug(cleaned);
       if (!slug || slug.length < 2) {
         this.logger.debug(`Skipped invalid slug for: "${cleaned}"`);
-        this.jobLogger.debug(`Skipped invalid slug for: "${cleaned}"`);
         continue;
       }
 
@@ -375,9 +336,6 @@ export class SeedingService {
         await this.firmRepo.save(firm);
         created++;
         this.logger.debug(
-          `Created firm: "${cleaned}" (source: ${candidate.source})`,
-        );
-        this.jobLogger.debug(
           `Created firm: "${cleaned}" (source: ${candidate.source})`,
         );
       }
