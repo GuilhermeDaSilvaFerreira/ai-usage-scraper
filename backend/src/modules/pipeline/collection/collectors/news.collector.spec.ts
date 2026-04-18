@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { NewsCollector, CollectedContent } from './news.collector';
+import { NewsCollector } from './news.collector';
 import {
   ExaService,
   ExaSearchResult,

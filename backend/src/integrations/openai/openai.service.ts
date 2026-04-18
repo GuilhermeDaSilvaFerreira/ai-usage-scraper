@@ -11,7 +11,7 @@ export interface LlmExtractionRequest {
 export interface LlmExtractionResponse {
   signals: Array<{
     type: string;
-    data: Record<string, any>;
+    data: Record<string, unknown>;
     confidence: number;
     reasoning: string;
   }>;

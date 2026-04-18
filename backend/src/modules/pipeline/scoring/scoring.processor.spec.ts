@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
-import { ScoringProcessor, SCORING_QUEUE } from './scoring.processor';
+import { ScoringProcessor } from './scoring.processor';
 import { ScoringService } from './scoring.service';
 import { OUTREACH_CAMPAIGNS_QUEUE } from '../../sales-pipeline/outreach/outreach-campaign.processor';
 

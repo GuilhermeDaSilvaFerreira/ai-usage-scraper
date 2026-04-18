@@ -9,7 +9,7 @@ export interface CollectedContent {
   content: string;
   sourceType: SourceType;
   publishedDate?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 @Injectable()

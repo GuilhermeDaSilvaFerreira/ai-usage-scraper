@@ -26,6 +26,32 @@ export interface EdgarFirmInfo {
   filings: EdgarFiling[];
 }
 
+interface EdgarHitSource {
+  cik?: string;
+  entity_name?: string;
+  display_names?: string[];
+  entity_type?: string;
+  sic?: string;
+  sic_description?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+}
+
+interface EdgarSearchHit {
+  _source?: EdgarHitSource;
+}
+
+interface EdgarFilingsData {
+  recent?: {
+    cik?: string;
+    form?: string[];
+    filingDate?: string[];
+    primaryDocument?: string[];
+  };
+}
+
 @Injectable()
 export class SecEdgarService {
   private readonly logger = new Logger(SecEdgarService.name);
@@ -62,7 +88,7 @@ export class SecEdgarService {
         });
 
         const hits = response.data?.hits?.hits || [];
-        return hits.map((hit: any) => this.mapToFirmInfo(hit));
+        return hits.map((hit: EdgarSearchHit) => this.mapToFirmInfo(hit));
       } catch (error) {
         this.logger.error(`SEC EDGAR search failed for "${query}"`, {
           ...extractHttpErrorDetails(error),
@@ -84,7 +110,7 @@ export class SecEdgarService {
         );
 
         const hits = response.data?.hits?.hits || [];
-        return hits.map((hit: any) => this.mapToFirmInfo(hit));
+        return hits.map((hit: EdgarSearchHit) => this.mapToFirmInfo(hit));
       } catch (error) {
         this.logger.warn(`SEC EDGAR company name lookup failed for "${name}"`, {
           ...extractHttpErrorDetails(error),
@@ -152,7 +178,7 @@ export class SecEdgarService {
         );
 
         const hits = response.data?.hits?.hits || [];
-        return hits.map((hit: any) => this.mapToFirmInfo(hit));
+        return hits.map((hit: EdgarSearchHit) => this.mapToFirmInfo(hit));
       } catch (error) {
         this.logger.error('SEC EDGAR adviser search failed', {
           ...extractHttpErrorDetails(error),
@@ -162,8 +188,8 @@ export class SecEdgarService {
     });
   }
 
-  private mapToFirmInfo(hit: any): EdgarFirmInfo {
-    const source = hit._source || {};
+  private mapToFirmInfo(hit: EdgarSearchHit): EdgarFirmInfo {
+    const source = hit._source ?? {};
     return {
       cik: source.cik || '',
       name: source.entity_name || source.display_names?.[0] || '',
@@ -182,7 +208,7 @@ export class SecEdgarService {
     };
   }
 
-  private mapFilings(filingsData: any): EdgarFiling[] {
+  private mapFilings(filingsData: EdgarFilingsData): EdgarFiling[] {
     if (!filingsData?.recent) return [];
     const recent = filingsData.recent;
     const filings: EdgarFiling[] = [];

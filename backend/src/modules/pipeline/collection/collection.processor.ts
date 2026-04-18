@@ -20,7 +20,9 @@ export class CollectionProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<CollectionJobData>): Promise<any> {
+  async process(
+    job: Job<CollectionJobData>,
+  ): Promise<{ success: boolean; sourcesCollected: number }> {
     const { firmId, firmName } = job.data;
     this.logger.log(`Processing collection job for: ${firmName} (${firmId})`);
 

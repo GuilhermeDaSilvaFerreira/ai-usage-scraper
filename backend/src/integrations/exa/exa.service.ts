@@ -44,12 +44,12 @@ export class ExaService {
         const result = await this.client!.searchAndContents(query, {
           numResults: options?.numResults ?? 10,
           text: true,
-          category: options?.category as any,
+          category: options?.category,
           startPublishedDate: options?.startPublishedDate,
           includeDomains: options?.includeDomains,
         });
 
-        return (result.results ?? []).map((r: any) => ({
+        return (result.results ?? []).map((r) => ({
           url: r.url ?? '',
           title: r.title ?? '',
           text: r.text ?? '',
@@ -74,7 +74,7 @@ export class ExaService {
           text: true,
         });
 
-        return (result.results ?? []).map((r: any) => ({
+        return (result.results ?? []).map((r) => ({
           url: r.url ?? '',
           title: r.title ?? '',
           text: r.text ?? '',

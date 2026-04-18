@@ -96,7 +96,7 @@ export class OutreachMessageService {
     ]);
 
     const signalSummaries = signals.map((s) => {
-      const data = s.signal_data as Record<string, any>;
+      const data = s.signal_data;
       return `- [${s.signal_type}] ${data?.title || data?.description || 'Signal detected'} (confidence: ${s.extraction_confidence})`;
     });
 
