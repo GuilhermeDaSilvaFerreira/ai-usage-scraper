@@ -7,7 +7,6 @@ import {
   createPerson,
   createOutreachCampaign,
   OutreachStatus,
-  RoleCategory,
 } from '../setup/fixtures';
 import { OutreachCampaign } from '../../src/database/entities/outreach-campaign.entity';
 import { OutreachService } from '../../src/modules/sales-pipeline/outreach/outreach.service';

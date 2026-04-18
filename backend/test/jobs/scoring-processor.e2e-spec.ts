@@ -5,16 +5,10 @@ import { truncateAllTables, getRepo } from '../setup/test-db';
 import {
   createFirm,
   createFirmSignal,
-  createFirmScore,
-  createScoreEvidence,
-  FirmType,
   SignalType,
-  ExtractionMethod,
   JobType,
   JobStatus,
 } from '../setup/fixtures';
-import { Firm } from '../../src/database/entities/firm.entity';
-import { FirmSignal } from '../../src/database/entities/firm-signal.entity';
 import { FirmScore } from '../../src/database/entities/firm-score.entity';
 import { ScoreEvidence } from '../../src/database/entities/score-evidence.entity';
 import { ScrapeJob } from '../../src/database/entities/scrape-job.entity';
@@ -74,7 +68,7 @@ describe('ScoringProcessor / ScoringService E2E', () => {
       expect(scores[0].signal_count).toBe(3);
 
       expect(scores[0].dimension_scores).toBeDefined();
-      const dimensionKeys = Object.keys(scores[0].dimension_scores);
+      const dimensionKeys = Object.keys(scores[0].dimension_scores!);
       expect(dimensionKeys.length).toBeGreaterThan(0);
 
       const evidenceRepo = getRepo(module, ScoreEvidence);
@@ -92,12 +86,6 @@ describe('ScoringProcessor / ScoringService E2E', () => {
 
     it('should upsert an existing FirmScore instead of creating a duplicate', async () => {
       const firm = await createFirm(module);
-      const signal1 = await createFirmSignal(module, firm.id, {
-        signal_type: SignalType.AI_HIRING,
-      });
-      const signal2 = await createFirmSignal(module, firm.id, {
-        signal_type: SignalType.AI_NEWS_MENTION,
-      });
 
       const firstResult = await scoringService.scoreFirm(firm.id);
       expect(firstResult).not.toBeNull();
@@ -260,7 +248,7 @@ describe('ScoringProcessor / ScoringService E2E', () => {
       expect(firmIds).toContain(firmB.id);
       expect(firmIds).toContain(firmC.id);
 
-      const ranks = allScores.map((s) => s.rank).sort((a, b) => a - b);
+      const ranks = allScores.map((s) => s.rank!).sort((a, b) => a - b);
       expect(ranks).toEqual([1, 2, 3]);
 
       for (const score of allScores) {
@@ -324,7 +312,6 @@ describe('ScoringProcessor / ScoringService E2E', () => {
 
     it('should skip firms with zero signals', async () => {
       const firmWithSignals = await createFirm(module);
-      const firmWithoutSignals = await createFirm(module);
 
       await createFirmSignal(module, firmWithSignals.id, {
         signal_type: SignalType.AI_NEWS_MENTION,

@@ -17,7 +17,11 @@ export class OutreachCampaignProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<OutreachCampaignJobData>): Promise<any> {
+  async process(job: Job<OutreachCampaignJobData>): Promise<{
+    success: boolean;
+    firmId: string;
+    campaignsCreated: number;
+  }> {
     const { firmId } = job.data;
 
     this.logger.log(`Creating default outreach campaigns for firm ${firmId}`);

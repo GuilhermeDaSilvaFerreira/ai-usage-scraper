@@ -29,7 +29,11 @@ export class ExtractionProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<ExtractionJobData>): Promise<any> {
+  async process(job: Job<ExtractionJobData>): Promise<{
+    success: boolean;
+    signalsExtracted: number;
+    methods: string[];
+  }> {
     const { dataSourceId, firmId, firmName, content, url, sourceType } =
       job.data;
     this.logger.log(`Processing extraction for ${firmName} from ${url}`);

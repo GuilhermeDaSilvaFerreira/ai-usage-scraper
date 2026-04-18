@@ -71,7 +71,7 @@ export class NlpExtractor implements Extractor {
     const aiMentionCount = this.countAiKeywords(lowerContent);
 
     if (aiMentionCount > 0) {
-      const sentences = doc.sentences().json() as any[];
+      const sentences = doc.sentences().json() as { text: string }[];
       for (const sentence of sentences) {
         const sentenceText = (sentence.text || '').toLowerCase();
         const hasAiKeyword = [...AI_KEYWORDS].some((kw) =>
@@ -79,7 +79,7 @@ export class NlpExtractor implements Extractor {
         );
         if (!hasAiKeyword) continue;
 
-        const people = nlp(sentence.text).people().json() as any[];
+        const people = nlp(sentence.text).people().json() as { text: string }[];
         for (const person of people) {
           const personName = person.text?.trim();
           if (!personName || personName.length < 3) continue;

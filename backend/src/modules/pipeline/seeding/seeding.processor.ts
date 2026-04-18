@@ -19,7 +19,7 @@ export class SeedingProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<SeedingJobData>): Promise<any> {
+  async process(job: Job<SeedingJobData>): Promise<unknown> {
     const { targetFirmCount } = job.data;
     this.logger.log(
       `Processing seeding job (target: ${targetFirmCount} firms)`,

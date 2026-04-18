@@ -6,7 +6,7 @@ export interface JobLogEntry {
   timestamp: string;
   level: 'log' | 'warn' | 'error' | 'debug';
   message: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 export class JobLogger {
@@ -32,22 +32,22 @@ export class JobLogger {
     }
   }
 
-  log(message: string, data?: any): void {
+  log(message: string, data?: Record<string, unknown>): void {
     this.nestLogger.log(message);
     if (this.fileLoggingEnabled) this.append('log', message, data);
   }
 
-  warn(message: string, data?: any): void {
+  warn(message: string, data?: Record<string, unknown>): void {
     this.nestLogger.warn(message);
     if (this.fileLoggingEnabled) this.append('warn', message, data);
   }
 
-  error(message: string, data?: any): void {
+  error(message: string, data?: Record<string, unknown>): void {
     this.nestLogger.error(message);
     if (this.fileLoggingEnabled) this.append('error', message, data);
   }
 
-  debug(message: string, data?: any): void {
+  debug(message: string, data?: Record<string, unknown>): void {
     this.nestLogger.debug(message);
     if (this.fileLoggingEnabled) this.append('debug', message, data);
   }
@@ -55,7 +55,7 @@ export class JobLogger {
   private append(
     level: JobLogEntry['level'],
     message: string,
-    data?: any,
+    data?: Record<string, unknown>,
   ): void {
     this.entries.push({
       timestamp: new Date().toISOString(),

@@ -92,7 +92,7 @@ export function OutreachDetailPage() {
   const handleSave = useCallback(async () => {
     if (!id || !campaign) return
 
-    if (statusChanged && !contactedBy.trim()) {
+    if (statusChanged && !contactedBy?.trim()) {
       setContactedByError('Analyst name is required before changing the campaign status')
       return
     }
@@ -247,7 +247,7 @@ export function OutreachDetailPage() {
               <label className="text-xs font-medium text-muted-foreground">
                 Platform
               </label>
-              <Select value={platform} onValueChange={setPlatform}>
+              <Select value={platform ?? undefined} onValueChange={setPlatform}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select..." />
                 </SelectTrigger>
@@ -278,7 +278,7 @@ export function OutreachDetailPage() {
                       ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/50'
                       : 'border-input'
                   }`}
-                  value={contactedBy}
+                  value={contactedBy ?? ''}
                   onChange={(e) => {
                     setContactedBy(e.target.value)
                     if (contactedByError && e.target.value.trim()) {
@@ -299,7 +299,7 @@ export function OutreachDetailPage() {
               rows={3}
               className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               placeholder="Internal notes..."
-              value={notes}
+              value={notes ?? ''}
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
@@ -328,7 +328,7 @@ export function OutreachDetailPage() {
               rows={8}
               className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 leading-relaxed"
               placeholder="Write or generate an outreach message..."
-              value={outreachMessage}
+              value={outreachMessage ?? ''}
               onChange={(e) => setOutreachMessage(e.target.value)}
             />
           </div>

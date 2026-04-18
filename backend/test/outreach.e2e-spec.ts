@@ -13,9 +13,6 @@ import {
   createDataSource,
   OutreachStatus,
   ContactPlatform,
-  FirmType,
-  RoleCategory,
-  SignalType,
 } from './setup/fixtures';
 import { OutreachCampaign } from '../src/database/entities/outreach-campaign.entity';
 

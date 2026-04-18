@@ -28,7 +28,7 @@ export class ScoringProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<ScoringJobData>): Promise<any> {
+  async process(job: Job<ScoringJobData>): Promise<unknown> {
     const { firmId, config, scoreAll } = job.data;
     const scoringConfig = config || DEFAULT_SCORING_CONFIG;
 
