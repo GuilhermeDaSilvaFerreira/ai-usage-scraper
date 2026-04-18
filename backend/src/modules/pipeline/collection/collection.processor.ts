@@ -1,7 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { CollectionService, COLLECTION_QUEUE } from './collection.service.js';
-import { JobLogger } from '../../../common/utils/index.js';
+import { CommonLogger } from '../../../common/utils/index.js';
 
 export interface CollectionJobData {
   firmId: string;
@@ -14,7 +14,7 @@ export interface CollectionJobData {
   lockRenewTime: 150000,
 })
 export class CollectionProcessor extends WorkerHost {
-  private readonly logger = new JobLogger(CollectionProcessor.name);
+  private readonly logger = new CommonLogger(CollectionProcessor.name);
 
   constructor(private readonly collectionService: CollectionService) {
     super();

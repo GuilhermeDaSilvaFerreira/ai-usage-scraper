@@ -4,7 +4,7 @@ import {
   PeopleCollectionService,
   PEOPLE_COLLECTION_QUEUE,
 } from './people-collection.service.js';
-import { JobLogger } from '../../../common/utils/index.js';
+import { CommonLogger } from '../../../common/utils/index.js';
 
 export interface PeopleCollectionJobData {
   firmId: string;
@@ -17,7 +17,7 @@ export interface PeopleCollectionJobData {
   lockRenewTime: 150000,
 })
 export class PeopleCollectionProcessor extends WorkerHost {
-  private readonly logger = new JobLogger(PeopleCollectionProcessor.name);
+  private readonly logger = new CommonLogger(PeopleCollectionProcessor.name);
 
   constructor(
     private readonly peopleCollectionService: PeopleCollectionService,

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,12 +12,11 @@ import { RegexExtractor } from './extractors/regex.extractor.js';
 import { NlpExtractor } from './extractors/nlp.extractor.js';
 import { HeuristicExtractor } from './extractors/heuristic.extractor.js';
 import { LlmExtractor } from './extractors/llm.extractor.js';
-import { JobLogger } from '../../../common/utils/index.js';
+import { CommonLogger } from '../../../common/utils/index.js';
 
 @Injectable()
 export class ExtractionPipelineService {
-  private readonly logger = new Logger(ExtractionPipelineService.name);
-  private readonly jobLogger = new JobLogger(ExtractionPipelineService.name);
+  private readonly logger = new CommonLogger(ExtractionPipelineService.name);
   private readonly confidenceThreshold: number;
 
   constructor(
@@ -71,9 +70,7 @@ export class ExtractionPipelineService {
           this.logger.debug(
             `Low confidence across all extractors for ${input.firmName}; invoking LLM fallback`,
           );
-          this.jobLogger.debug(
-            `Low confidence across all extractors for ${input.firmName}; invoking LLM fallback`,
-          );
+
           const llmResults = await this.llmExtractor.extract(input);
           allResults.push(...llmResults);
         }
@@ -99,9 +96,7 @@ export class ExtractionPipelineService {
     this.logger.debug(
       `Extracted ${savedSignals.length} signals for firm ${input.firmName}`,
     );
-    this.jobLogger.debug(
-      `Extracted ${savedSignals.length} signals for firm ${input.firmName}`,
-    );
+
     return savedSignals;
   }
 

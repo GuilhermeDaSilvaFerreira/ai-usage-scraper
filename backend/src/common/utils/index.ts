@@ -13,7 +13,7 @@ export {
   parseAumString,
   cleanFirmName,
 } from './text.utils.js';
-export { JobLogger } from './job-logger.js';
+export { CommonLogger } from './common-logger.js';
 export {
   extractHttpErrorDetails,
   type HttpErrorDetails,

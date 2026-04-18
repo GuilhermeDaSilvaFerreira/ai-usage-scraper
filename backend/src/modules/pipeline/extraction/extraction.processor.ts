@@ -3,7 +3,7 @@ import { Job } from 'bullmq';
 import { ExtractionPipelineService } from './extraction-pipeline.service.js';
 import { EXTRACTION_QUEUE } from '../collection/collection.service.js';
 import { PipelineOrchestratorService } from '../pipeline-orchestrator.service.js';
-import { JobLogger } from '../../../common/utils/index.js';
+import { CommonLogger } from '../../../common/utils/index.js';
 
 export interface ExtractionJobData {
   dataSourceId: string;
@@ -20,7 +20,7 @@ export interface ExtractionJobData {
   lockRenewTime: 150000,
 })
 export class ExtractionProcessor extends WorkerHost {
-  private readonly logger = new JobLogger(ExtractionProcessor.name);
+  private readonly logger = new CommonLogger(ExtractionProcessor.name);
 
   constructor(
     private readonly extractionPipeline: ExtractionPipelineService,

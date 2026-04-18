@@ -22,7 +22,7 @@ jest.mock('../../../common/utils/index', () => ({
     wrap: jest.fn((fn: () => Promise<any>) => fn()),
   },
   extractHttpErrorDetails: jest.fn(() => ({})),
-  JobLogger: jest.fn().mockImplementation(() => ({
+  CommonLogger: jest.fn().mockImplementation(() => ({
     log: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),

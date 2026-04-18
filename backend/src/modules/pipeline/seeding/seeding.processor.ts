@@ -2,7 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { SeedingService, SEEDING_QUEUE } from './seeding.service.js';
 import { PipelineOrchestratorService } from '../pipeline-orchestrator.service.js';
-import { JobLogger } from '../../../common/utils/index.js';
+import { CommonLogger } from '../../../common/utils/index.js';
 
 export interface SeedingJobData {
   targetFirmCount: number;
@@ -10,7 +10,7 @@ export interface SeedingJobData {
 
 @Processor(SEEDING_QUEUE, { concurrency: 3 })
 export class SeedingProcessor extends WorkerHost {
-  private readonly logger = new JobLogger(SeedingProcessor.name);
+  private readonly logger = new CommonLogger(SeedingProcessor.name);
 
   constructor(
     private readonly seedingService: SeedingService,

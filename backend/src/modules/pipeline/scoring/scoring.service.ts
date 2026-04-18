@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Firm } from '../../../database/entities/firm.entity.js';
@@ -15,13 +15,11 @@ import {
   DimensionScoreKey,
 } from '../../../common/interfaces/index.js';
 import { ScoringEngine } from './scoring-engine.js';
-import { JobLogger } from '../../../common/utils/index.js';
+import { CommonLogger } from '../../../common/utils/index.js';
 
 @Injectable()
 export class ScoringService {
-  private readonly logger = new Logger(ScoringService.name);
-  private readonly jobLogger = new JobLogger(ScoringService.name);
-
+  private readonly logger = new CommonLogger(ScoringService.name);
   constructor(
     @InjectRepository(Firm)
     private readonly firmRepo: Repository<Firm>,
@@ -46,9 +44,7 @@ export class ScoringService {
       this.logger.debug(
         `Skipping firm ${firmId}: ${signals.length} signals (minimum: ${config.thresholds.minSignalsForScore})`,
       );
-      this.jobLogger.debug(
-        `Skipping firm ${firmId}: ${signals.length} signals (minimum: ${config.thresholds.minSignalsForScore})`,
-      );
+
       return null;
     }
 
@@ -122,9 +118,7 @@ export class ScoringService {
         this.logger.warn(
           'No firms have signals — skipping scoring. Run collection and extraction first.',
         );
-        this.jobLogger.warn(
-          'No firms have signals — skipping scoring. Run collection and extraction first.',
-        );
+
         job.status = JobStatus.COMPLETED;
         job.completed_at = new Date();
         job.metadata = {
@@ -148,7 +142,7 @@ export class ScoringService {
           }
         } catch (error) {
           this.logger.error(`Failed to score firm ${firm.id}: ${error}`);
-          this.jobLogger.error(`Failed to score firm ${firm.id}: ${error}`);
+
           failed++;
         }
       }
@@ -163,9 +157,7 @@ export class ScoringService {
       this.logger.log(
         `Scoring complete (${config.version}): ${scored} scored, ${failed} failed`,
       );
-      this.jobLogger.log(
-        `Scoring complete (${config.version}): ${scored} scored, ${failed} failed`,
-      );
+
       return { scored, failed };
     } catch (error) {
       job.status = JobStatus.FAILED;
@@ -180,7 +172,7 @@ export class ScoringService {
     config: ScoringConfig,
   ): Promise<{ scored: number; failed: number }> {
     this.logger.log(`Re-scoring all firms with version: ${config.version}`);
-    this.jobLogger.log(`Re-scoring all firms with version: ${config.version}`);
+
     return this.scoreAllFirms(config);
   }
 
@@ -198,9 +190,7 @@ export class ScoringService {
     this.logger.log(
       `Computed ranks for ${scores.length} firms (version: ${scoreVersion})`,
     );
-    this.jobLogger.log(
-      `Computed ranks for ${scores.length} firms (version: ${scoreVersion})`,
-    );
+
   }
 
   private async saveEvidence(

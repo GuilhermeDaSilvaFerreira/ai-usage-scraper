@@ -18,7 +18,7 @@ jest.mock('../../../common/utils/index', () => ({
   createSlug: jest.requireActual('../../../common/utils/index').createSlug,
   cleanFirmName: jest.requireActual('../../../common/utils/index')
     .cleanFirmName,
-  JobLogger: jest.fn().mockImplementation(() => ({
+  CommonLogger: jest.fn().mockImplementation(() => ({
     log: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
