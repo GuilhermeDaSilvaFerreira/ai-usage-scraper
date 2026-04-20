@@ -102,6 +102,11 @@ describe('Rankings (e2e)', () => {
         aum_usd: 5_000_000_000,
       });
       const dimScores = makeDimensionScores();
+      await createFirmScore(module, firm.id, {
+        overall_score: 85,
+        signal_count: 12,
+        dimension_scores: dimScores as any,
+      });
 
       const { body } = await request(server).get('/api/rankings').expect(200);
 

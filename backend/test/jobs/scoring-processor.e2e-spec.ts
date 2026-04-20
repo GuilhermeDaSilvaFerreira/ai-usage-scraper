@@ -86,6 +86,12 @@ describe('ScoringProcessor / ScoringService E2E', () => {
 
     it('should upsert an existing FirmScore instead of creating a duplicate', async () => {
       const firm = await createFirm(module);
+      await createFirmSignal(module, firm.id, {
+        signal_type: SignalType.AI_HIRING,
+      });
+      await createFirmSignal(module, firm.id, {
+        signal_type: SignalType.AI_NEWS_MENTION,
+      });
 
       const firstResult = await scoringService.scoreFirm(firm.id);
       expect(firstResult).not.toBeNull();
