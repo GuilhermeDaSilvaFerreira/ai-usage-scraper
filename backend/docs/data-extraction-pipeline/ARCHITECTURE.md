@@ -1,64 +1,57 @@
-# Architecture
+# Data Pipeline — Architecture
 
 ## Overview
 
-The PE AI Intelligence system is a NestJS backend that discovers, scores, and ranks PE and private credit firms by their AI adoption maturity. It operates as a four-stage data pipeline backed by PostgreSQL for persistence and BullMQ (Redis) for asynchronous job processing.
+A NestJS backend that discovers PE/private-credit firms, gathers public evidence of their AI adoption, turns that evidence into structured signals, and produces an explainable 0–100 score per firm. Scoring completion auto-seeds sales outreach campaigns (see [sales pipeline](../sales-pipeline/ARCHITECTURE.md)).
 
-Every score is explainable: a user can drill into any firm's score and trace it back through dimension breakdowns, individual signal evidence, extraction method, and the original public source URL.
+Every score is traceable end-to-end: score → dimension breakdown → evidence entries → source signal → original URL.
 
 ```mermaid
 flowchart TB
     subgraph external [External Sources]
-        SEC[SEC EDGAR]
+        SEC[SEC EDGAR / IAPD]
         EXA[Exa Semantic Search]
-        PUB[Public Rankings]
+        WIKI[Wikipedia REST]
         WEB[Firm Websites]
         LI[LinkedIn]
     end
 
     subgraph app [NestJS Application]
-        subgraph stage1 [Stage 1 - Seeding]
+        subgraph stage1 [Stage 1 - Seeding & Enrichment]
             S1[SecEdgarSource]
             S2[ExaSearchSource]
             S3[PublicRankingsSource]
             ER[EntityResolutionService]
+            FE[FirmEnrichmentService]
         end
 
-        subgraph stage2 [Stage 2 - Signal Collection]
-            CQ[BullMQ: signal-collection]
+        subgraph stage2 [Stage 2 - Collection]
+            SCQ[BullMQ: signal-collection]
+            PCQ[BullMQ: people-collection]
             NC[NewsCollector]
             HC[HiringCollector]
             CC[ConferenceCollector]
             WC[WebsiteCollector]
             LC[LinkedInCollector]
-        end
-
-        subgraph stage2b [Stage 2 - People Collection]
-            PQ[BullMQ: people-collection]
-            LPC[LinkedIn People Collector]
-            WPC[Website Team Collector]
+            SAC[SecAdvCollector]
+            LLMP[LlmPeopleExtractor]
         end
 
         subgraph stage3 [Stage 3 - Extraction]
             EQ[BullMQ: extraction]
-            RE[RegexExtractor]
-            NE[NlpExtractor]
-            HE[HeuristicExtractor]
-            LE[LlmExtractor]
+            RE[Regex] --> NE[NLP] --> HE[Heuristic] --> LE[LLM fallback]
         end
 
         subgraph stage4 [Stage 4 - Scoring]
             SQ[BullMQ: scoring]
-            SE[ScoringEngine]
-            D1[AiTalentDimension]
-            D2[PublicActivityDimension]
-            D3[HiringSignalsDimension]
-            D4[ThoughtLeadershipDimension]
-            D5[VendorPartnershipsDimension]
-            D6[PortfolioStrategyDimension]
+            SE[ScoringEngine + 6 Dimensions]
         end
 
-        API[REST API]
+        subgraph stage5 [Sales auto-seed]
+            OQ[BullMQ: outreach-campaigns]
+        end
+
+        API[REST API + Swagger]
     end
 
     DB[(PostgreSQL)]
@@ -66,92 +59,88 @@ flowchart TB
 
     SEC --> S1
     EXA --> S2
-    PUB --> S3
+    S3 --> DB
     S1 & S2 & S3 --> ER --> DB
+    WIKI --> FE
+    EXA --> FE
+    WEB --> FE
+    SEC --> FE
+    FE --> DB
 
-    DB --> CQ --> NC & HC & CC & WC & LC
-    DB --> PQ --> LPC & WPC
-    WEB --> WC
-    WEB --> WPC
-    LI --> LC
-    LI --> LPC
-    NC & HC & CC & WC & LC --> EQ
-    LPC & WPC --> DB
-    EQ --> RE --> NE --> HE
-    HE -->|"confidence < threshold"| LE
-    RE & NE & HE & LE --> DB
-
-    DB --> SQ --> SE
-    SE --> D1 & D2 & D3 & D4 & D5 & D6
-    D1 & D2 & D3 & D4 & D5 & D6 --> DB
-
+    DB --> SCQ --> NC & HC & CC & WC & LC --> DB
+    DB --> PCQ --> LC & WC & SAC --> LLMP --> DB
+    SCQ --> EQ --> RE
+    LE --> DB
+    EQ --> SQ --> SE --> DB
+    SQ --> OQ
     DB --> API
-    CQ -.-> REDIS
-    PQ -.-> REDIS
+
+    SCQ -.-> REDIS
+    PCQ -.-> REDIS
     EQ -.-> REDIS
     SQ -.-> REDIS
+    OQ -.-> REDIS
 ```
 
 ## Technology Stack
 
-| Layer             | Technology                           | Purpose                                          |
-| ----------------- | ------------------------------------ | ------------------------------------------------ |
-| Runtime           | Node.js + NestJS 11 + TypeScript     | Application framework with dependency injection  |
-| Database          | PostgreSQL 16                        | Persistent storage for firms, signals, scores    |
-| Queue             | BullMQ 5 + Redis 7                   | Async job processing for pipeline stages         |
-| ORM               | TypeORM 0.3                          | Entity mapping, schema sync, query building      |
-| LLM (default)     | Anthropic SDK                        | Extraction fallback when confidence is low       |
-| LLM (alternate)   | OpenAI SDK                           | Switchable via `LLM_PROVIDER=openai`             |
-| Web Search        | Exa SDK                              | Semantic search for discovering firms and signals |
-| Web Scraping      | Axios + Cheerio                      | HTML fetching and parsing for firm websites      |
-| NLP               | compromise                           | Lightweight entity recognition and text analysis |
-| API Documentation | Swagger (OpenAPI)                    | Auto-generated interactive API docs at `/docs`   |
-| Containerization  | Docker + docker-compose              | One-command infrastructure setup                 |
-| Code Quality      | ESLint 9 (flat config) + Prettier    | Linting and formatting                           |
-| Testing           | Jest + Supertest                     | Unit and e2e test runner                         |
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| Runtime | Node.js 20 + NestJS 11 + TypeScript | App framework with DI |
+| Database | PostgreSQL 16 | Persistence (firms, signals, scores, people, campaigns) |
+| Queue | BullMQ 5 + Redis 7 | Async job processing, orchestrator counters |
+| ORM | TypeORM 0.3 | Entity mapping + schema sync |
+| LLM | Anthropic SDK (default) / OpenAI SDK | Signal extraction fallback, people extraction, outreach message generation |
+| Web search | Exa SDK | Firm discovery, signal collection, enrichment |
+| Reference data | Wikipedia REST API | Infobox-based firm enrichment (description, HQ, AUM, founded year) |
+| Regulatory data | SEC EDGAR + IAPD APIs | CRD/CIK lookup, Form ADV principals |
+| Web scraping | Axios + Cheerio | Firm websites, team pages, mailto extraction |
+| NLP | compromise | Lightweight entity/sentence classification |
+| API docs | Swagger (OpenAPI) | Interactive docs at `/docs` |
+| Scheduling | `@nestjs/schedule` + cron | Weekly full pipeline run |
+| Testing | Jest + Supertest | Unit + E2E |
 
 ## Project Structure
 
 ```
 backend/
-├── docker-compose.yml                      Postgres + Redis + app containers
-├── .env.example                            All environment variables documented
-├── package.json                            Dependencies and scripts
-├── nest-cli.json                           Build config (copies seed-firms.json to dist/)
+├── docker-compose.yml                      Postgres + Redis + app
+├── docker-compose.test.yml                 Test-only Postgres + Redis
+├── .env.example                            All environment variables
 │
 └── src/
-    ├── main.ts                             Entry point: port, Swagger, global ValidationPipe
-    ├── app.module.ts                       Root module wiring all sub-modules
+    ├── main.ts                             Entry point + Swagger
+    ├── app.module.ts                       Root wiring
     │
-    ├── config/                             Typed config namespaces (database, redis, app, llm, scrapers, pipeline)
+    ├── config/                             Typed config namespaces (app, database, redis, llm, pipeline, scrapers)
     │
     ├── common/
-    │   ├── enums/                          FirmType, SignalType, SourceType, ExtractionMethod, JobType, etc.
-    │   ├── interfaces/                     ScoringConfig, ExtractionResult, Extractor contract, metadata shapes
-    │   └── utils/                          Rate limiter, text normalization, content hashing, job logger
+    │   ├── enums/                          FirmType, SignalType, SourceType, RoleCategory, OutreachStatus, ContactPlatform, etc.
+    │   ├── interfaces/                     ScoringConfig, ExtractionResult, EvidenceEntry, DimensionScoreKey
+    │   └── utils/                          Rate limiters, text/hash utils, CommonLogger, HTTP error helpers
     │
-    ├── database/
-    │   └── entities/                       9 TypeORM entities (see schema below)
+    ├── database/entities/                  10 TypeORM entities (see schema below)
     │
     ├── integrations/
-    │   ├── exa/                            Exa API client (semantic web search)
-    │   ├── openai/                         OpenAI client (LLM extraction)
-    │   ├── anthropic/                      Anthropic client (LLM extraction, default)
-    │   └── sec-edgar/                      SEC EDGAR client (Form ADV, CIK lookup)
+    │   ├── exa/                            Semantic web search (search + getContents)
+    │   ├── openai/                         LLM signals + people + free-form completion (gpt-4o / gpt-4o-mini)
+    │   ├── anthropic/                      LLM signals + people + free-form completion (claude-sonnet-4, default)
+    │   ├── sec-edgar/                      CIK lookup, Form ADV filings (EDGAR full-text search)
+    │   └── wikipedia/                      Page resolution + infobox parser for firm enrichment
     │
     └── modules/
         ├── firms/                          GET /api/firms — list, detail, signals, scores
-        ├── people/                         GET /api/people — list, firm-specific people
-        ├── rankings/                       GET /api/rankings — ranked firms, dimension breakdown
-        ├── sales-pipeline/outreach/        Sales outreach campaigns + LLM message generation (see sales-pipeline docs)
+        ├── people/                         GET /api/people — list, by-firm
+        ├── rankings/                       GET /api/rankings — overall & per-dimension
+        ├── sales-pipeline/outreach/        Outreach campaigns + LLM message generation
         └── pipeline/
             ├── pipeline.controller.ts      POST seed/collect/score/rescore, GET status
             ├── pipeline-orchestrator.service.ts  Auto-chains stages via Redis counters
-            ├── pipeline-cron.service.ts     Weekly scheduled full pipeline run
-            ├── seeding/                    Stage 1: three sources + entity resolution + enrichment
-            ├── collection/                 Stage 2: BullMQ processors + 5 signal collectors + 2 people collectors
-            ├── extraction/                 Stage 3: layered pipeline + 4 extractors
-            └── scoring/                    Stage 4: engine + 6 dimension scorers
+            ├── pipeline-cron.service.ts    Weekly scheduled full run
+            ├── seeding/                    SEC + Exa + Public + EntityResolution + FirmEnrichment
+            ├── collection/                 Signal + people BullMQ processors, 6 collectors, LlmPeopleExtractor
+            ├── extraction/                 Layered Regex → NLP → Heuristic → LLM
+            └── scoring/                    Engine + 6 dimension scorers
 ```
 
 ## Database Schema
@@ -167,6 +156,7 @@ erDiagram
     people ||--o{ outreach_campaigns : targets
     data_sources ||--o{ firm_signals : sources
     data_sources ||--o{ people : sources
+    data_sources ||--o{ firms : seeded
     firm_scores ||--o{ score_evidence : explains
     firm_signals ||--o{ score_evidence : contributes
 
@@ -185,8 +175,6 @@ erDiagram
         boolean is_active
         timestamp last_collected_at
         uuid data_source_id FK
-        timestamp created_at
-        timestamp updated_at
     }
 
     firm_aliases {
@@ -194,7 +182,6 @@ erDiagram
         uuid firm_id FK
         varchar alias_name
         varchar source
-        timestamp created_at
     }
 
     people {
@@ -206,11 +193,8 @@ erDiagram
         varchar linkedin_url
         varchar email
         text bio
-        text outreach_message
         uuid data_source_id FK
         float confidence
-        timestamp created_at
-        timestamp updated_at
     }
 
     outreach_campaigns {
@@ -218,13 +202,12 @@ erDiagram
         uuid firm_id FK
         uuid person_id FK
         enum status
-        enum contact_platform
+        enum_array contact_platforms
         varchar contacted_by
         text notes
+        text outreach_message
         timestamp first_contact_at
         timestamp last_status_change_at
-        timestamp created_at
-        timestamp updated_at
     }
 
     data_sources {
@@ -233,12 +216,10 @@ erDiagram
         enum target_entity
         varchar url
         varchar title
-        timestamp retrieved_at
         varchar raw_content_hash
         text content_snippet
         float reliability_score
         jsonb metadata
-        timestamp created_at
     }
 
     firm_signals {
@@ -262,7 +243,6 @@ erDiagram
         jsonb scoring_parameters
         int signal_count
         timestamp scored_at
-        timestamp created_at
     }
 
     score_evidence {
@@ -286,47 +266,22 @@ erDiagram
         text error_message
         int retry_count
         jsonb metadata
-        timestamp created_at
     }
 ```
 
+Note: `outreach_campaigns.contact_platforms` is a **PostgreSQL array** of `ContactPlatform` enum values (a campaign can use multiple channels).
+
 ## Key Design Decisions
 
-### Raw signals vs. derived scores
-
-The `firm_signals` table holds evidence collected from public sources. The `firm_scores` table holds computed outputs. This separation lets you re-score every firm without re-scraping by replaying signals through a new scoring configuration.
-
-### Score versioning
-
-Every scoring run is tagged with a `score_version` string (e.g. `v1.0`, `v2.0-experimental`). The `scoring_parameters` JSONB column stores the exact weights and thresholds used, making every score fully reproducible. A unique constraint on `(firm_id, score_version)` ensures one score per firm per version.
-
-### Source provenance
-
-Every signal links back to a `data_sources` row which stores the URL, retrieval timestamp, content hash, and a reliability score. A user can trace any score contribution back to its original source.
-
-### Content deduplication
-
-The `raw_content_hash` (SHA-256) on `data_sources` prevents re-processing identical content across collection runs.
-
-### Entity resolution
-
-The `firm_aliases` table stores all known name variants for a firm. The `EntityResolutionService` normalizes names, computes Levenshtein distance (15% threshold), and matches by website domain to merge duplicates during seeding.
-
-### Layered extraction (cost optimization)
-
-The extraction pipeline cascades from cheap (regex) to expensive (LLM). The LLM is only invoked when all prior layers produce zero high-confidence results, minimizing API token costs.
-
-### Async pipeline via BullMQ
-
-Long-running pipeline stages (seeding, collection, extraction, scoring) are processed through BullMQ queues. This provides retry support (3 attempts with exponential backoff for collection), concurrency control (10 workers per queue), and progress monitoring via the status endpoint.
-
-### Automated stage chaining
-
-The `PipelineOrchestratorService` chains stages at the process level: seeding auto-triggers collection, and extraction completion auto-triggers per-firm scoring via atomic Redis counters. After scoring completes for a firm, the `ScoringProcessor` enqueues an `outreach-campaigns` job to automatically create outreach campaigns for all people at the firm (see [sales-pipeline architecture](../sales-pipeline/ARCHITECTURE.md)). Auto-chaining is toggleable via `PIPELINE_AUTO_CHAIN` for debugging. A `PipelineCronService` runs the full pipeline on a configurable weekly schedule.
-
-### UUID v7 primary keys
-
-All entities use UUID v7 (time-ordered UUIDs), which preserves insertion order while avoiding sequential ID enumeration.
+- **Signals vs. scores** — Raw evidence (`firm_signals`) is separated from derived outputs (`firm_scores`), so you can A/B test new scoring weights without re-scraping.
+- **Score versioning** — Every scoring run carries a `score_version` string. `scoring_parameters` JSONB stores the exact weights/thresholds used. Unique constraint on `(firm_id, score_version)`.
+- **Source provenance** — Every signal and every person links to a `data_sources` row with URL, hash, reliability score, and retrieval timestamp.
+- **Content dedup** — SHA-256 `raw_content_hash` on `data_sources` prevents re-processing identical content.
+- **Entity resolution** — `EntityResolutionService` merges duplicate firms via normalized-name exact match, website-domain match, and Levenshtein distance (≤15%). All variants persisted as `firm_aliases`.
+- **Layered extraction** — Signal extraction cascades regex → NLP → heuristic → LLM. The LLM is invoked only when **zero** prior layers produced a high-confidence result, minimizing tokens.
+- **LLM-assisted people extraction** — In people collection, `LlmPeopleExtractor` is the primary parser for unstructured sources (LinkedIn snippets, firm team pages). SEC ADV results arrive pre-structured and skip the LLM entirely. Regex remains as a final fallback when the LLM is disabled or returns nothing.
+- **Auto-chaining** — `PipelineOrchestratorService` chains stages at the process level via Redis counters: seed → collect → extract → score (per firm) → outreach. Toggleable via `PIPELINE_AUTO_CHAIN`.
+- **UUID v7 primary keys** — Time-ordered UUIDs preserve insertion order without sequential ID enumeration.
 
 ## Module Dependency Graph
 
@@ -340,6 +295,7 @@ flowchart TD
     AppModule --> OpenAIModule
     AppModule --> AnthropicModule
     AppModule --> SecEdgarModule
+    AppModule --> WikipediaModule
     AppModule --> FirmsModule
     AppModule --> PeopleModule
     AppModule --> RankingsModule
@@ -350,34 +306,33 @@ flowchart TD
     PipelineModule --> OpenAIModule
     PipelineModule --> AnthropicModule
     PipelineModule --> SecEdgarModule
+    PipelineModule --> WikipediaModule
 
-    FirmsModule -.->|TypeORM| DB[(firms, firm_signals, firm_scores)]
-    PeopleModule -.->|TypeORM| DB2[(people)]
-    RankingsModule -.->|TypeORM| DB3[(firm_scores)]
-    PipelineModule -.->|TypeORM| DB4[(all entities)]
+    OutreachModule --> OpenAIModule
+    OutreachModule --> AnthropicModule
+
     PipelineModule -.->|BullMQ| REDIS[(Redis queues)]
-    PipelineModule -.->|"Cron + Orchestrator"| REDIS
+    OutreachModule -.->|BullMQ| REDIS
 ```
+
+Registered BullMQ queues: `seeding`, `signal-collection`, `people-collection`, `extraction`, `scoring`, `outreach-campaigns`.
 
 ## Environment Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `DB_HOST` | Yes | `localhost` | PostgreSQL host |
-| `DB_PORT` | Yes | `5432` | PostgreSQL port |
-| `DB_USERNAME` | Yes | `postgres` | PostgreSQL user |
-| `DB_PASSWORD` | Yes | `postgres` | PostgreSQL password |
-| `DB_DATABASE` | Yes | `pe_intelligence` | PostgreSQL database name |
-| `REDIS_HOST` | Yes | `localhost` | Redis host |
-| `REDIS_PORT` | Yes | `6379` | Redis port |
-| `EXA_API_KEY` | Yes | — | Exa API key (semantic web search) |
-| `ANTHROPIC_API_KEY` | Conditional | — | Required if `LLM_PROVIDER=anthropic` (default) |
-| `OPENAI_API_KEY` | Conditional | — | Required if `LLM_PROVIDER=openai` |
-| `LLM_PROVIDER` | No | `anthropic` | LLM provider: `anthropic` or `openai` |
-| `SEC_EDGAR_USER_AGENT` | Yes | — | User-agent for SEC EDGAR (use real email) |
+| `DB_HOST` / `DB_PORT` / `DB_USERNAME` / `DB_PASSWORD` / `DB_DATABASE` | Yes | `localhost` / `5432` / `postgres` / `postgres` / `pe_intelligence` | PostgreSQL connection |
+| `REDIS_HOST` / `REDIS_PORT` | Yes | `localhost` / `6379` | Redis connection |
+| `EXA_API_KEY` | Yes | — | Semantic web search |
+| `ANTHROPIC_API_KEY` | Conditional | — | Required when `LLM_PROVIDER=anthropic` (default) |
+| `OPENAI_API_KEY` | Conditional | — | Required when `LLM_PROVIDER=openai` |
+| `LLM_PROVIDER` | No | `anthropic` | `anthropic` or `openai` |
+| `LLM_PEOPLE_ENABLED` | No | `true` | Set `false` to disable LLM people extraction (regex-only fallback) |
+| `LLM_PEOPLE_BATCH_SIZE` | No | `6` | Sources per LLM people-extraction call |
+| `SEC_EDGAR_USER_AGENT` | Yes | — | User-agent for SEC EDGAR + IAPD (use a real email) |
 | `PORT` | No | `3000` | Application port |
-| `NODE_ENV` | No | `development` | `development` enables schema sync + query logging |
-| `EXTRACTION_CONFIDENCE_THRESHOLD` | No | `0.5` | Min confidence for extraction results (0–1) |
-| `PIPELINE_AUTO_CHAIN` | No | `true` | Enable automatic stage chaining (set `false` for manual mode) |
-| `PIPELINE_CRON_SCHEDULE` | No | `0 0 * * 0` | Cron expression for scheduled pipeline runs (default: Sunday midnight) |
+| `NODE_ENV` | No | `development` | `development` enables TypeORM schema sync + query logging |
+| `EXTRACTION_CONFIDENCE_THRESHOLD` | No | `0.5` | Minimum confidence for extraction results (0–1) |
+| `PIPELINE_AUTO_CHAIN` | No | `true` | Enable auto-chaining between pipeline stages |
+| `PIPELINE_CRON_SCHEDULE` | No | `0 0 * * 0` | Cron expression for the weekly full run (default: Sunday midnight) |
 | `PIPELINE_SEED_TARGET` | No | `50` | Target firm count for cron-triggered seeding |

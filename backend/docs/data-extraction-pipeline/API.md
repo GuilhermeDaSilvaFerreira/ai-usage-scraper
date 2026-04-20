@@ -1,32 +1,26 @@
-# API Reference
+# Data Pipeline — API Reference
 
 ## Interactive Documentation
 
-The full API reference is auto-generated from code via **Swagger (OpenAPI)** and is always up to date:
+Swagger (OpenAPI), auto-generated from code and always up to date:
 
 - **Local:** [http://localhost:3000/docs](http://localhost:3000/docs)
 - **Base URL:** `http://localhost:3000/api`
 
-Use Swagger to explore endpoints, view request/response schemas, and test calls directly from the browser.
+Use Swagger to test requests and inspect schemas. The outreach endpoints are documented separately in [Sales Pipeline — API](../sales-pipeline/API.md).
 
-## API Surface Overview
-
-### Pipeline Control (`/api/pipeline`)
-
-Trigger and monitor the four-stage data pipeline.
+## Pipeline Control (`/api/pipeline`)
 
 | Action | Method | Description |
 |--------|--------|-------------|
-| Seed | `POST /seed` | Discover firms from SEC, Exa, and public rankings (async) |
-| Collect all | `POST /collect` | Queue signal + people collection for all active firms (async) |
-| Collect one | `POST /:firm_id/collect` | Queue collection for a single firm (async) |
-| Score | `POST /score` | Score all firms with configurable weights (async) |
-| Re-score | `POST /rescore` | Replay existing signals through new weights (sync, no re-scraping) |
-| Status | `GET /status` | Queue health counts + 20 most recent jobs |
+| Seed | `POST /seed` | Enqueue firm discovery (SEC + Exa + public rankings + Wikipedia/Exa enrichment). Auto-chains into collection. |
+| Collect all | `POST /collect` | Enqueue signal + people collection for every active firm not collected in 24h |
+| Collect one | `POST /:firm_id/collect` | Enqueue signal + people collection for a single firm |
+| Score | `POST /score` | Enqueue bulk scoring of all firms (optional config for A/B) |
+| Re-score | `POST /rescore` | Sync re-scoring with new weights — no re-scraping |
+| Status | `GET /status` | Queue counts for all six pipeline queues + 20 most recent scrape jobs |
 
-### Firms (`/api/firms`)
-
-Browse the firm universe and drill into individual firm data.
+## Firms (`/api/firms`)
 
 | Action | Method | Description |
 |--------|--------|-------------|
@@ -34,22 +28,18 @@ Browse the firm universe and drill into individual firm data.
 | Detail | `GET /:id` | Firm with aliases, people, scores, and latest evidence |
 | Signals | `GET /:id/signals` | Paginated raw signals for a firm |
 | All scores | `GET /:id/scores` | All score versions for a firm |
-| Score by version | `GET /:id/scores/:version` | Specific score version with full evidence chain |
+| Score by version | `GET /:id/scores/:version` | Specific score with its full evidence chain |
 
-### People (`/api/people`)
-
-AI/tech-relevant personnel discovered during collection.
+## People (`/api/people`)
 
 | Action | Method | Description |
 |--------|--------|-------------|
 | List | `GET /` | Paginated list with search, role category, and firm filters |
 | By firm | `GET /firms/:firmId/people` | All AI-relevant people at a given firm |
 
-### Rankings (`/api/rankings`)
-
-Ranked firm lists and per-dimension leaderboards.
+## Rankings (`/api/rankings`)
 
 | Action | Method | Description |
 |--------|--------|-------------|
-| Rankings | `GET /` | Firms ranked by overall score for a given version |
+| Rankings | `GET /` | Firms ranked by `overall_score` for a given `scoreVersion` |
 | Dimensions | `GET /dimensions` | Top 10 firms per scoring dimension |

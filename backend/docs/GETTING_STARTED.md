@@ -38,7 +38,23 @@ ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
 SEC_EDGAR_USER_AGENT=YourCompany admin@yourcompany.com
 ```
 
-See [Architecture > Environment Variables](data-pipeline/ARCHITECTURE.md#environment-variables) for the full reference.
+Additional knobs:
+
+```env
+# LLM people extraction (used during people collection)
+LLM_PEOPLE_ENABLED=true        # set "false" to disable the LLM people fallback
+LLM_PEOPLE_BATCH_SIZE=6        # sources per LLM call (tune for cost vs. latency)
+
+# Pipeline automation
+PIPELINE_AUTO_CHAIN=true       # seed → collect → extract → score → outreach
+PIPELINE_CRON_SCHEDULE=0 0 * * 0   # Sunday midnight
+PIPELINE_SEED_TARGET=50
+
+# Extraction
+EXTRACTION_CONFIDENCE_THRESHOLD=0.5
+```
+
+See [Architecture > Environment Variables](data-extraction-pipeline/ARCHITECTURE.md#environment-variables) for the full reference.
 
 ### 3. Start Infrastructure
 

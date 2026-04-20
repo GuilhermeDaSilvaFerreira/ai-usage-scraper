@@ -1,105 +1,78 @@
-# Sales Pipeline API Reference
+# Sales Pipeline — API Reference
 
-## Interactive Documentation
-
-All endpoints are documented in Swagger at [http://localhost:3000/docs](http://localhost:3000/docs) under the **Outreach** tag.
+Swagger (OpenAPI) at [http://localhost:3000/docs](http://localhost:3000/docs) under the **Outreach** tag.
 
 **Base URL:** `http://localhost:3000/api`
 
 ## Outreach Campaigns (`/api/outreach`)
 
-Track and manage sales outreach campaigns across PE firms. Campaigns are automatically created for every person at a firm after the firm completes scoring.
+Campaigns are **auto-created for every person at a firm** when that firm finishes scoring (see [architecture](./ARCHITECTURE.md)).
 
 | Action | Method | Path | Description |
 |--------|--------|------|-------------|
-| List campaigns | `GET /` | `/outreach` | Paginated list with filters for status, platform, firm, and person name search |
-| Stats | `GET /stats` | `/outreach/stats` | Aggregate counts by outreach status |
-| By firm | `GET /firms/:firmId` | `/outreach/firms/:firmId` | All campaigns for a specific firm |
-| By person | `GET /people/:personId/campaign` | `/outreach/people/:personId/campaign` | Campaign for a specific person |
-| Detail | `GET /:id` | `/outreach/:id` | Single campaign with firm and person relations (includes `outreach_message`) |
-| Create | `POST /` | `/outreach` | Create a new outreach campaign (normally auto-created by the pipeline) |
-| Update | `PATCH /:id` | `/outreach/:id` | Update status, notes, platform, message, or analyst |
-| Generate message | `POST /:id/generate-message` | `/outreach/:id/generate-message` | Generate outreach message via LLM, saves to campaign, returns updated campaign |
+| List | `GET` | `/outreach` | Paginated list with filters for `search` (person name), `firm_name`, `status`, `contact_platforms`, `firm_id` |
+| Stats | `GET` | `/outreach/stats` | Aggregate campaign counts grouped by `OutreachStatus` |
+| By firm | `GET` | `/outreach/firms/:firmId` | All campaigns for a firm (includes `person`) |
+| By person | `GET` | `/outreach/people/:personId/campaign` | Single campaign for a person (includes `firm` + `person`) |
+| Detail | `GET` | `/outreach/:id` | Campaign with `firm` + `person` relations and `outreach_message` |
+| Create | `POST` | `/outreach` | Manual create (normally auto-created by the pipeline) |
+| Update | `PATCH` | `/outreach/:id` | Update status, platforms, notes, message, or claim via `contacted_by` |
+| Generate message | `POST` | `/outreach/:id/generate-message` | Generate outreach message via LLM, save to campaign, return updated record |
 
-### Query Parameters (GET `/`)
+### Query parameters (GET `/outreach`)
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `search` | string | Search by person name (partial match, ILIKE) |
-| `status` | `OutreachStatus` enum | Filter by campaign status |
-| `contact_platform` | `ContactPlatform` enum | Filter by communication channel |
-| `firm_id` | UUID | Filter by firm |
-| `page` | number | Page number (default: 1) |
-| `limit` | number | Items per page (default: 25, max: 100) |
+| `search` | string | Person name (partial match, `ILIKE`) |
+| `firm_name` | string | Firm name (partial match, `ILIKE`) |
+| `status` | `OutreachStatus` | Exact status filter |
+| `contact_platforms` | `ContactPlatform[]` | Matches campaigns whose `contact_platforms` array overlaps with any of the given values. Accepts repeated query params or a comma-separated list. |
+| `firm_id` | UUID | Exact firm filter |
+| `page` | number | Default `1` |
+| `limit` | number | Default `25`, max `100` |
 
-### Create Body (POST `/`)
+### Create body (POST `/outreach`)
 
 ```json
 {
   "firm_id": "uuid",
   "person_id": "uuid",
   "contacted_by": "Analyst Name (optional)",
-  "contact_platform": "email",
+  "contact_platforms": ["email", "linkedin"],
   "notes": "Optional internal notes"
 }
 ```
 
-Note: `contacted_by` is optional. Auto-created campaigns have `contacted_by: null`.
+Auto-created campaigns start with `contacted_by: null` and `contact_platforms: []`.
 
-### Update Body (PATCH `/:id`)
+### Update body (PATCH `/outreach/:id`)
 
-All fields are optional:
+All fields optional:
 
 ```json
 {
   "status": "first_contact_sent",
-  "contact_platform": "linkedin",
+  "contact_platforms": ["linkedin"],
   "contacted_by": "Analyst Name",
   "notes": "Updated notes",
-  "outreach_message": "Edited message text"
+  "outreach_message": "Edited message body"
 }
 ```
 
-Note: `contacted_by` can only be set once. After it is filled, subsequent updates to this field are ignored by the backend.
+- `contacted_by` is **immutable** once non-null — subsequent updates are ignored silently.
+- Setting `status` to `first_contact_sent` auto-stamps `first_contact_at` the first time.
+- Any status change updates `last_status_change_at`.
 
-### Generate Message (POST `/:id/generate-message`)
+### Generate message (POST `/outreach/:id/generate-message`)
 
-Generates a fresh outreach message via the configured LLM provider (Anthropic or OpenAI). The generated message is automatically saved to `campaign.outreach_message` and the full updated campaign is returned.
-
-If a message already exists, calling this endpoint overwrites it with a freshly generated one.
-
-**Response:** Full `OutreachCampaign` object with the newly generated `outreach_message`.
-
-## Auto-Creation Pipeline
-
-After a firm completes scoring, the `ScoringProcessor` enqueues a job on the `outreach-campaigns` BullMQ queue. The `OutreachCampaignProcessor` then creates a default campaign for every person at the firm that doesn't already have one. Default campaigns have:
-
-- `status: not_contacted`
-- `contacted_by: null`
-- No notes, no platform, no message
-
-This ensures every scored firm has outreach campaigns ready for analysts to work on.
+Runs the configured LLM (Anthropic or OpenAI) over firm + person + signals + score + source excerpts, writes the result to `campaign.outreach_message`, and returns the full updated `OutreachCampaign` (with `firm` + `person`). Re-running overwrites the existing message.
 
 ## Enums
 
-### OutreachStatus
+### `OutreachStatus`
 
-| Value | Label |
-|-------|-------|
-| `not_contacted` | Not contacted |
-| `first_contact_sent` | First contact sent |
-| `follow_up_sent` | Follow-up sent |
-| `replied` | Replied |
-| `under_negotiation` | Under negotiation |
-| `declined` | Declined |
-| `closed_won` | Closed (won) |
-| `closed_lost` | Closed (lost) |
+`not_contacted`, `first_contact_sent`, `follow_up_sent`, `replied`, `under_negotiation`, `declined`, `closed_won`, `closed_lost`
 
-### ContactPlatform
+### `ContactPlatform`
 
-| Value | Label |
-|-------|-------|
-| `email` | Email |
-| `linkedin` | LinkedIn |
-| `phone` | Phone |
-| `other` | Other |
+`email`, `linkedin`, `phone`, `other` — stored as a PostgreSQL array, so a campaign can simultaneously record multiple channels used.

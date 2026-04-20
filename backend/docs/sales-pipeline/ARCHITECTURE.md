@@ -1,171 +1,135 @@
-# Sales Pipeline Architecture
+# Sales Pipeline — Architecture
 
 ## Overview
 
-The sales pipeline extends the data pipeline by turning scored PE firms into actionable sales leads. It automatically creates outreach campaigns for every person at a firm after scoring, and provides LLM-powered personalized message generation for analysts.
+The sales pipeline turns scored PE firms into actionable leads. Whenever a firm finishes scoring, an outreach campaign is auto-created for every person at that firm. Analysts can generate personalized outreach messages via LLM on demand.
 
 ```mermaid
 flowchart TB
-    subgraph dataPipeline [Data Pipeline]
-        SCORING[ScoringProcessor]
+    subgraph data [Data Pipeline]
+        SCP[ScoringProcessor]
         FIRMS[(firms)]
         PEOPLE[(people)]
         SIGNALS[(firm_signals)]
         SCORES[(firm_scores)]
     end
 
-    subgraph salesPipeline [Sales Pipeline]
-        OQ["outreach-campaigns\nBullMQ queue"]
+    subgraph sales [Sales Pipeline]
+        OQ[outreach-campaigns queue]
         OCP[OutreachCampaignProcessor]
-        OUTREACH[(outreach_campaigns)]
-        MSG[OutreachMessageService]
+        OS[OutreachService]
+        OMS[OutreachMessageService]
         LLM[Anthropic / OpenAI]
+        DB[(outreach_campaigns)]
     end
 
-    SCORING -->|"enqueue after\nper-firm scoring"| OQ
-    OQ --> OCP
-    OCP -->|"create campaigns\nfor each person"| OUTREACH
-    FIRMS --> OUTREACH
-    PEOPLE --> OUTREACH
-    OUTREACH --> MSG
-    FIRMS --> MSG
-    SIGNALS --> MSG
-    SCORES --> MSG
-    MSG --> LLM
-    MSG -->|"save outreach_message"| OUTREACH
+    SCP -->|per-firm scoring done| OQ
+    OQ --> OCP --> OS --> DB
+    PEOPLE --> OS
+    FIRMS --> OS
+
+    DB --> OMS
+    FIRMS --> OMS
+    PEOPLE --> OMS
+    SIGNALS --> OMS
+    SCORES --> OMS
+    OMS --> LLM
+    OMS -->|save outreach_message| DB
 ```
 
 ## Module Structure
 
 ```
-backend/src/modules/sales-pipeline/
-└── outreach/
-    ├── outreach.module.ts                NestJS module (registers BullMQ queue)
-    ├── outreach.controller.ts            REST endpoints under /api/outreach
-    ├── outreach.service.ts               Campaign CRUD, stats, auto-creation
-    ├── outreach-message.service.ts       LLM message generation (per campaign)
-    ├── outreach-campaign.processor.ts    BullMQ processor for auto-creating campaigns
-    └── dto/
-        ├── create-outreach.dto.ts
-        ├── update-outreach.dto.ts
-        └── query-outreach.dto.ts
+backend/src/modules/sales-pipeline/outreach/
+├── outreach.module.ts                    Registers outreach-campaigns queue
+├── outreach.controller.ts                REST endpoints under /api/outreach
+├── outreach.service.ts                   CRUD + stats + bulk auto-creation
+├── outreach-message.service.ts           LLM message generation
+├── outreach-campaign.processor.ts        BullMQ processor for auto-creation
+└── dto/
+    ├── create-outreach.dto.ts
+    ├── update-outreach.dto.ts
+    ├── query-outreach.dto.ts
+    └── outreach-response.dto.ts
 ```
 
-## Database Schema
+## Database
 
 ### `outreach_campaigns` table
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | UUID v7 | Primary key |
-| `firm_id` | UUID FK | References `firms.id` (CASCADE) |
-| `person_id` | UUID FK | References `people.id` (CASCADE) |
-| `status` | enum | `OutreachStatus` (default: `not_contacted`) |
-| `contact_platform` | enum | `ContactPlatform` (nullable) |
-| `contacted_by` | varchar(500) | Analyst name (nullable, immutable once set) |
-| `notes` | text | Internal notes (nullable) |
-| `outreach_message` | text | LLM-generated or manually edited outreach message (nullable) |
-| `first_contact_at` | timestamptz | When first outreach was sent (nullable) |
-| `last_status_change_at` | timestamptz | Last status update (nullable) |
-| `created_at` | timestamptz | Auto-generated |
-| `updated_at` | timestamptz | Auto-generated |
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID v7 | PK |
+| `firm_id` | UUID FK | → `firms.id`, CASCADE delete |
+| `person_id` | UUID FK | → `people.id`, CASCADE delete |
+| `status` | enum `OutreachStatus` | Default `not_contacted` |
+| `contact_platforms` | enum array `ContactPlatform[]` | Multi-select (can include `email`, `linkedin`, `phone`, `other`). Default `[]`. |
+| `contacted_by` | varchar(500) | Analyst name. **Immutable once set.** |
+| `notes` | text | Internal notes |
+| `outreach_message` | text | LLM-generated or analyst-edited message body |
+| `first_contact_at` | timestamptz | Auto-set when status flips to `first_contact_sent` |
+| `last_status_change_at` | timestamptz | Touched on any status change |
+| `created_at` / `updated_at` | timestamptz | Auto |
 
-### Changes to `people` table
+### `people.email`
 
-One column added to the existing `people` entity:
+An `email` column was added to the `people` entity (nullable). Extracted during people collection from `mailto:` anchors on team pages or from LLM output (never fabricated).
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `email` | varchar(500) | Person's email address (nullable, extracted during collection) |
-
-Note: `outreach_message` was moved from the `people` table to the `outreach_campaigns` table so that messages are per-campaign, not per-person.
-
-### ER Additions
-
-```mermaid
-erDiagram
-    firms ||--o{ outreach_campaigns : tracks
-    people ||--o{ outreach_campaigns : targets
-
-    outreach_campaigns {
-        uuid id PK
-        uuid firm_id FK
-        uuid person_id FK
-        enum status
-        enum contact_platform
-        varchar contacted_by
-        text notes
-        text outreach_message
-        timestamp first_contact_at
-        timestamp last_status_change_at
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    people {
-        varchar email
-    }
-```
-
-## Auto-Creation Pipeline
-
-After each per-firm scoring job completes, the `ScoringProcessor` enqueues a job on the `outreach-campaigns` BullMQ queue:
+## Auto-Creation Flow
 
 ```mermaid
 flowchart LR
-    ScoringProcessor["ScoringProcessor\n(per-firm job)"] -->|enqueue| OQ["outreach-campaigns\nBullMQ queue"]
-    OQ --> OCP["OutreachCampaignProcessor"]
-    OCP -->|"for each person\nwithout campaign"| DB[(outreach_campaigns)]
+    SCP[ScoringProcessor<br/>per-firm job] -->|enqueue| OQ[outreach-campaigns<br/>queue]
+    OQ --> OCP[OutreachCampaignProcessor]
+    OCP --> OS[OutreachService.createDefaultCampaignsForFirm]
+    OS -->|for each person without a campaign| DB[(outreach_campaigns)]
 ```
 
-The `OutreachCampaignProcessor`:
-1. Loads all people for the firm
-2. Checks which people already have campaigns
-3. Bulk-creates campaigns for those who don't, with `status: NOT_CONTACTED` and `contacted_by: null`
+`OutreachCampaignProcessor`:
 
-The queue is registered in both `PipelineModule` (for the scoring hook) and `OutreachModule` (for the processor).
+1. Loads all `people` rows for the firm.
+2. Looks up existing campaigns by `firm_id` to skip people already covered.
+3. Bulk-creates campaigns with `status: NOT_CONTACTED`, `contacted_by: null`, `contact_platforms: []`.
+
+Job id is deterministic (`outreach-${firmId}`) so duplicate scoring runs don't create duplicate jobs.
 
 ## Outreach Message Generation
 
 ### Flow
 
-1. Analyst opens a campaign detail page and clicks "Generate with AI".
-2. Frontend calls `POST /api/outreach/:campaignId/generate-message`.
-3. `OutreachMessageService` loads the campaign with person and firm relations, then gathers context from:
-   - **Person**: name, title, role, bio, LinkedIn
-   - **Firm**: name, type, AUM, description
-   - **Signals**: up to 15 most recent AI signals (summarized)
-   - **Score**: latest overall AI adoption score and rank
-   - **Data sources**: up to 5 source excerpts (300 chars each)
-4. A system prompt establishes the Soal Labs identity and message guidelines.
-5. A user prompt assembles all context into a structured format.
-6. The configured LLM provider (`anthropic` or `openai`) generates the message.
-7. The message is saved to `campaign.outreach_message` and the full updated campaign is returned.
+1. Analyst clicks "Generate with AI" on a campaign detail page.
+2. Frontend → `POST /api/outreach/:campaignId/generate-message`.
+3. `OutreachMessageService` loads the campaign with `person` + `firm`, then fetches:
+   - Up to 15 most recent `firm_signals` (with `data_source` relation).
+   - Latest `firm_score`.
+4. Builds prompts:
+   - **System prompt**: Soal Labs identity + message style guidelines (under 200 words, warm-peer tone, reference specific AI signals, soft CTA).
+   - **User prompt**: structured person + firm context + signal summaries + AI score + up to 5 source excerpts (300 chars each).
+5. Calls the configured LLM provider.
+6. Writes the result to `campaign.outreach_message` and returns the full updated campaign.
 
-### Token Optimization
+### Providers
 
-- Signal data is summarized to one-line entries (type + title + confidence).
-- Data source snippets are capped at 300 characters each, max 5 sources.
-- Person bio is capped at 300 characters.
-- Firm description is capped at 400 characters.
-- Max output tokens set to 1024.
+| Provider | Model | Notes |
+|----------|-------|-------|
+| Anthropic (default) | `claude-sonnet-4-20250514` | Chosen when `LLM_PROVIDER=anthropic` (default) |
+| OpenAI | `gpt-4o` | Chosen when `LLM_PROVIDER=openai` |
 
-### LLM Provider
+Max output tokens: 1024. Temperature: 0.7 (OpenAI) / default (Anthropic).
 
-The same `LLM_PROVIDER` env var used by the data pipeline controls which LLM generates outreach messages.
+### Token optimisation
 
-| Provider | Model | Temperature |
-|----------|-------|-------------|
-| Anthropic (default) | `claude-sonnet-4-20250514` | default |
-| OpenAI | `gpt-4o` | 0.7 |
+- Signals reduced to one-line summaries (`[type] title (confidence: x)`).
+- Source snippets capped at 300 chars, max 5 sources.
+- Person bio capped at 300 chars; firm description at 400 chars.
 
-### Message Persistence
+### Persistence & editing
 
-Generated messages are saved to `campaign.outreach_message`. The message is editable by the analyst in the campaign detail page and saved via the normal `PATCH /:id` endpoint. Re-generating always overwrites the existing message.
+Generated messages are stored on the campaign row. The analyst can edit the message via `PATCH /api/outreach/:id` with `outreach_message`. Calling `generate-message` again overwrites any existing text.
 
 ## `contacted_by` Immutability
 
-Once `contacted_by` is set on a campaign (either via manual update or during creation), it cannot be changed. The backend ignores `contacted_by` updates on campaigns that already have a non-null value. The frontend enforces this by rendering the field as read-only once set.
+Once `contacted_by` is non-null, `OutreachService.update` ignores further attempts to change it. The frontend enforces read-only display. Auto-created campaigns start with `contacted_by: null`, so an analyst can claim ownership on first update.
 
 ## Module Dependency Graph
 
@@ -174,14 +138,14 @@ flowchart TD
     AppModule --> OutreachModule
     AppModule --> PipelineModule
 
-    PipelineModule -->|"enqueue outreach\njobs after scoring"| OutreachQueue["outreach-campaigns queue"]
+    PipelineModule -->|enqueue after<br/>per-firm scoring| Q[outreach-campaigns queue]
+    OutreachModule --> Q
 
     OutreachModule -.->|TypeORM| OC[(outreach_campaigns)]
     OutreachModule -.->|TypeORM| P[(people)]
     OutreachModule -.->|TypeORM| F[(firms)]
     OutreachModule -.->|TypeORM| FS[(firm_signals)]
     OutreachModule -.->|TypeORM| FSC[(firm_scores)]
-    OutreachModule -.->|BullMQ| OutreachQueue
-    OutreachModule -.->|Global| AnthropicService
-    OutreachModule -.->|Global| OpenAIService
+    OutreachModule --> Anthropic[AnthropicService]
+    OutreachModule --> OpenAI[OpenAIService]
 ```
