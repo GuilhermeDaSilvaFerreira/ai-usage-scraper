@@ -28,6 +28,14 @@ export class QueryRankingsDto {
   @IsEnum(FirmType)
   firm_type?: FirmType;
 
+  @ApiPropertyOptional({
+    description: 'Case-insensitive partial match on firm name',
+    example: 'Blackstone',
+  })
+  @IsOptional()
+  @IsString()
+  firm_name?: string;
+
   @ApiPropertyOptional({ description: 'Page number', default: 1 })
   @IsOptional()
   @Type(() => Number)

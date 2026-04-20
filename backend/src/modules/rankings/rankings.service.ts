@@ -33,6 +33,12 @@ export class RankingsService {
       });
     }
 
+    if (query.firm_name && query.firm_name.trim().length > 0) {
+      qb.andWhere('firm.name ILIKE :firmName', {
+        firmName: `%${query.firm_name.trim()}%`,
+      });
+    }
+
     qb.orderBy('score.overall_score', 'DESC');
 
     const page = query.page || 1;

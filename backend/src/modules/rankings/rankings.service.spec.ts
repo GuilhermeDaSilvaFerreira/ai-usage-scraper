@@ -129,6 +129,28 @@ describe('RankingsService', () => {
       expect(firmTypeCalls).toHaveLength(0);
     });
 
+    it('applies firm_name filter (ILIKE)', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.getRankings({ firm_name: 'Black' });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'firm.name ILIKE :firmName',
+        { firmName: '%Black%' },
+      );
+    });
+
+    it('does not apply firm_name filter when blank', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.getRankings({ firm_name: '   ' });
+
+      const nameCalls = mockQueryBuilder.andWhere.mock.calls.filter(
+        (call: any[]) => call[0] === 'firm.name ILIKE :firmName',
+      );
+      expect(nameCalls).toHaveLength(0);
+    });
+
     it('maps score fields correctly in result items', async () => {
       const score = makeScore(1);
       mockQueryBuilder.getManyAndCount.mockResolvedValue([[score], 1]);
@@ -263,8 +285,8 @@ describe('RankingsService', () => {
         (d: any) => d.dimension === 'ai_talent_density',
       );
 
-      expect(talentDim.top_firms).toHaveLength(2);
-      expect(talentDim.top_firms[0]).toEqual(
+      expect(talentDim?.top_firms).toHaveLength(2);
+      expect(talentDim?.top_firms?.[0]).toEqual(
         expect.objectContaining({
           firm_id: expect.any(String),
           firm_name: expect.any(String),
@@ -296,8 +318,8 @@ describe('RankingsService', () => {
         (d: any) => d.dimension === 'ai_talent_density',
       );
 
-      expect(talentDim.top_firms).toHaveLength(1);
-      expect(talentDim.top_firms[0].firm_name).toBe('Alpha');
+      expect(talentDim?.top_firms).toHaveLength(1);
+      expect(talentDim?.top_firms?.[0].firm_name).toBe('Alpha');
     });
 
     it('limits top_firms to 10 per dimension', async () => {
@@ -314,7 +336,7 @@ describe('RankingsService', () => {
         (d: any) => d.dimension === 'ai_talent_density',
       );
 
-      expect(talentDim.top_firms).toHaveLength(10);
+      expect(talentDim?.top_firms).toHaveLength(10);
     });
 
     it('returns empty top_firms when no scores exist', async () => {

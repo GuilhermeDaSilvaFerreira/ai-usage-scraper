@@ -48,7 +48,6 @@ export class PeopleCollectionService {
     const firm = await this.firmRepo.findOneByOrFail({ id: firmId });
     this.logger.log(`Starting people collection for: ${firm.name}`);
 
-
     const aliases = await this.aliasRepo.find({ where: { firm_id: firmId } });
     const aliasNames = aliases
       .map((a) => a.alias_name)

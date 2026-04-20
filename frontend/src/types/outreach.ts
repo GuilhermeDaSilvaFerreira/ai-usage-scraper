@@ -5,7 +5,7 @@ export type OutreachCampaign = {
   firm_id: string
   person_id: string
   status: OutreachStatus
-  contact_platform: ContactPlatform | null
+  contact_platforms: ContactPlatform[]
   contacted_by: string | null
   notes: string | null
   outreach_message: string | null
@@ -23,6 +23,8 @@ export type OutreachCampaign = {
     full_name: string
     title: string | null
     email: string | null
+    linkedin_url: string | null
+    bio: string | null
   } | null
 }
 

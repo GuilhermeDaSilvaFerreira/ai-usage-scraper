@@ -2,8 +2,18 @@ import { RankingsTableCard } from '@/components/rankings/rankings-table-card'
 import { useRankings } from '@/hooks/use-rankings'
 
 export function RankingsPage() {
-  const { data, page, setPage, firmType, setFirmType, totalPages, loading, error } =
-    useRankings()
+  const {
+    data,
+    page,
+    setPage,
+    firmType,
+    setFirmType,
+    firmName,
+    setFirmName,
+    totalPages,
+    loading,
+    error,
+  } = useRankings()
 
   return (
     <div className="space-y-6">
@@ -21,8 +31,10 @@ export function RankingsPage() {
         page={page}
         totalPages={totalPages}
         firmType={firmType}
+        firmName={firmName}
         onPageChange={setPage}
         onFirmTypeChange={setFirmType}
+        onFirmNameChange={setFirmName}
       />
     </div>
   )

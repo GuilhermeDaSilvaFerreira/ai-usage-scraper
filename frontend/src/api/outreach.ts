@@ -6,7 +6,7 @@ export type QueryOutreachParams = {
   search?: string
   firm_name?: string
   status?: OutreachStatus
-  contact_platform?: ContactPlatform
+  contact_platforms?: ContactPlatform[]
   firm_id?: string
   page?: number
   limit?: number
@@ -16,8 +16,13 @@ export async function getOutreachCampaigns(
   params?: QueryOutreachParams,
   signal?: AbortSignal,
 ) {
+  const { contact_platforms, ...rest } = params ?? {}
+  const queryParams: Record<string, unknown> = { ...rest }
+  if (contact_platforms && contact_platforms.length > 0) {
+    queryParams.contact_platforms = contact_platforms.join(',')
+  }
   const { data } = await api.get<Paginated<OutreachCampaign>>('/outreach', {
-    params,
+    params: queryParams,
     signal,
   })
   return data
@@ -55,7 +60,7 @@ export async function createOutreachCampaign(body: {
   firm_id: string
   person_id: string
   contacted_by?: string
-  contact_platform?: ContactPlatform
+  contact_platforms?: ContactPlatform[]
   notes?: string
 }) {
   const { data } = await api.post<OutreachCampaign>('/outreach', body)
@@ -66,7 +71,7 @@ export async function updateOutreachCampaign(
   id: string,
   body: {
     status?: OutreachStatus
-    contact_platform?: ContactPlatform
+    contact_platforms?: ContactPlatform[]
     contacted_by?: string
     notes?: string
     outreach_message?: string

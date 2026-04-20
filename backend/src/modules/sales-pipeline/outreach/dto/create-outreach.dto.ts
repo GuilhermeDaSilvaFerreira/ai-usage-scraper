@@ -1,4 +1,4 @@
-import { IsUUID, IsEnum, IsString, IsOptional } from 'class-validator';
+import { IsUUID, IsEnum, IsString, IsOptional, IsArray } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ContactPlatform } from '../../../../common/enums/index.js';
 
@@ -18,11 +18,13 @@ export class CreateOutreachDto {
 
   @ApiPropertyOptional({
     enum: ContactPlatform,
-    description: 'Communication channel',
+    isArray: true,
+    description: 'Communication channels used to reach the person',
   })
   @IsOptional()
-  @IsEnum(ContactPlatform)
-  contact_platform?: ContactPlatform;
+  @IsArray()
+  @IsEnum(ContactPlatform, { each: true })
+  contact_platforms?: ContactPlatform[];
 
   @ApiPropertyOptional({ description: 'Internal notes' })
   @IsOptional()

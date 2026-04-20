@@ -4,11 +4,12 @@ import {
   IsUUID,
   IsString,
   IsNumber,
+  IsArray,
   Min,
   Max,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import {
   OutreachStatus,
   ContactPlatform,
@@ -39,11 +40,25 @@ export class QueryOutreachDto {
 
   @ApiPropertyOptional({
     enum: ContactPlatform,
-    description: 'Filter by contact platform',
+    isArray: true,
+    description:
+      'Filter campaigns whose contact_platforms include any of the given values. ' +
+      'Accepts a single value, repeated query params, or a comma-separated list.',
   })
   @IsOptional()
-  @IsEnum(ContactPlatform)
-  contact_platform?: ContactPlatform;
+  @IsArray()
+  @IsEnum(ContactPlatform, { each: true })
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string')
+      return value
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean);
+    return [value];
+  })
+  contact_platforms?: ContactPlatform[];
 
   @ApiPropertyOptional({
     description: 'Filter by firm UUID',

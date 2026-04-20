@@ -150,24 +150,36 @@ describe('Outreach (e2e)', () => {
       expect(body.items[0].status).toBe(OutreachStatus.REPLIED);
     });
 
-    it('should filter by contact_platform', async () => {
+    it('should filter by contact_platforms (overlap)', async () => {
       const firm = await createFirm(module);
       const p1 = await createPerson(module, firm.id);
       const p2 = await createPerson(module, firm.id);
+      const p3 = await createPerson(module, firm.id);
       await createOutreachCampaign(module, firm.id, p1.id, {
-        contact_platform: ContactPlatform.EMAIL,
+        contact_platforms: [ContactPlatform.EMAIL],
       });
       await createOutreachCampaign(module, firm.id, p2.id, {
-        contact_platform: ContactPlatform.LINKEDIN,
+        contact_platforms: [ContactPlatform.LINKEDIN, ContactPlatform.PHONE],
+      });
+      await createOutreachCampaign(module, firm.id, p3.id, {
+        contact_platforms: [ContactPlatform.OTHER],
       });
 
       const { body } = await request(server)
         .get('/api/outreach')
-        .query({ contact_platform: ContactPlatform.EMAIL })
+        .query({ contact_platforms: 'email,linkedin' })
         .expect(200);
 
-      expect(body.total).toBe(1);
-      expect(body.items[0].contact_platform).toBe(ContactPlatform.EMAIL);
+      expect(body.total).toBe(2);
+      const platforms = body.items.flatMap(
+        (c: { contact_platforms: string[] }) => c.contact_platforms,
+      );
+      expect(platforms).toEqual(
+        expect.arrayContaining([
+          ContactPlatform.EMAIL,
+          ContactPlatform.LINKEDIN,
+        ]),
+      );
     });
 
     it('should filter by firm_id', async () => {
@@ -391,7 +403,7 @@ describe('Outreach (e2e)', () => {
         firm.id,
         person.id,
         {
-          contact_platform: ContactPlatform.EMAIL,
+          contact_platforms: [ContactPlatform.EMAIL, ContactPlatform.LINKEDIN],
           notes: 'Initial outreach',
         },
       );
@@ -402,7 +414,12 @@ describe('Outreach (e2e)', () => {
 
       expect(body.id).toBe(campaign.id);
       expect(body.status).toBe(OutreachStatus.NOT_CONTACTED);
-      expect(body.contact_platform).toBe(ContactPlatform.EMAIL);
+      expect(body.contact_platforms).toEqual(
+        expect.arrayContaining([
+          ContactPlatform.EMAIL,
+          ContactPlatform.LINKEDIN,
+        ]),
+      );
       expect(body.notes).toBe('Initial outreach');
       expect(body.firm).toBeDefined();
       expect(body.firm.id).toBe(firm.id);
@@ -458,19 +475,25 @@ describe('Outreach (e2e)', () => {
           firm_id: firm.id,
           person_id: person.id,
           contacted_by: 'John Doe',
-          contact_platform: ContactPlatform.LINKEDIN,
+          contact_platforms: [ContactPlatform.LINKEDIN, ContactPlatform.EMAIL],
           notes: 'Met at conference',
         })
         .expect(201);
 
       expect(body.contacted_by).toBe('John Doe');
-      expect(body.contact_platform).toBe(ContactPlatform.LINKEDIN);
+      expect(body.contact_platforms).toEqual([
+        ContactPlatform.LINKEDIN,
+        ContactPlatform.EMAIL,
+      ]);
       expect(body.notes).toBe('Met at conference');
 
       const repo = getRepo(module, OutreachCampaign);
       const saved = await repo.findOneBy({ id: body.id });
       expect(saved!.contacted_by).toBe('John Doe');
-      expect(saved!.contact_platform).toBe(ContactPlatform.LINKEDIN);
+      expect(saved!.contact_platforms).toEqual([
+        ContactPlatform.LINKEDIN,
+        ContactPlatform.EMAIL,
+      ]);
       expect(saved!.notes).toBe('Met at conference');
     });
 
@@ -567,17 +590,22 @@ describe('Outreach (e2e)', () => {
       );
     });
 
-    it('should update contact_platform', async () => {
+    it('should update contact_platforms (multiple channels)', async () => {
       const firm = await createFirm(module);
       const person = await createPerson(module, firm.id);
       const campaign = await createOutreachCampaign(module, firm.id, person.id);
 
       const { body } = await request(server)
         .patch(`/api/outreach/${campaign.id}`)
-        .send({ contact_platform: ContactPlatform.PHONE })
+        .send({
+          contact_platforms: [ContactPlatform.PHONE, ContactPlatform.LINKEDIN],
+        })
         .expect(200);
 
-      expect(body.contact_platform).toBe(ContactPlatform.PHONE);
+      expect(body.contact_platforms).toEqual([
+        ContactPlatform.PHONE,
+        ContactPlatform.LINKEDIN,
+      ]);
     });
 
     it('should set contacted_by only if not already set', async () => {

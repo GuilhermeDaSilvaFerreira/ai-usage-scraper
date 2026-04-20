@@ -222,7 +222,8 @@ Body of article ignored.`;
         .mockResolvedValueOnce({
           data: {
             title: 'The Carlyle Group',
-            extract: 'The Carlyle Group is an American multinational private equity firm.',
+            extract:
+              'The Carlyle Group is an American multinational private equity firm.',
           },
         })
         .mockResolvedValueOnce({

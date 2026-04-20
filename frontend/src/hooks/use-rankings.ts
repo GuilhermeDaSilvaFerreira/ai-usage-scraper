@@ -13,6 +13,8 @@ export type RankingsState = {
   setPage: (page: number) => void
   firmType: 'all' | FirmType
   setFirmType: (type: 'all' | FirmType) => void
+  firmName: string
+  setFirmName: (name: string) => void
   totalPages: number
   loading: boolean
   error: string | null
@@ -21,6 +23,7 @@ export type RankingsState = {
 export function useRankings(): RankingsState {
   const [page, setPage] = useState(1)
   const [firmType, setFirmType] = useState<'all' | FirmType>('all')
+  const [firmName, setFirmName] = useState('')
   const [data, setData] = useState<RankingsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -31,11 +34,13 @@ export function useRankings(): RankingsState {
       setLoading(true)
       setError(null)
       try {
+        const trimmed = firmName.trim()
         const res = await getRankings(
           {
             page,
             limit: PAGE_SIZE,
             firm_type: firmType === 'all' ? undefined : firmType,
+            firm_name: trimmed.length > 0 ? trimmed : undefined,
           },
           ac.signal,
         )
@@ -49,9 +54,20 @@ export function useRankings(): RankingsState {
       }
     })()
     return () => ac.abort()
-  }, [page, firmType])
+  }, [page, firmType, firmName])
 
   const totalPages = data?.total_pages ?? 0
 
-  return { data, page, setPage, firmType, setFirmType, totalPages, loading, error }
+  return {
+    data,
+    page,
+    setPage,
+    firmType,
+    setFirmType,
+    firmName,
+    setFirmName,
+    totalPages,
+    loading,
+    error,
+  }
 }

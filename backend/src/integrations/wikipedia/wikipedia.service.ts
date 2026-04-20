@@ -271,7 +271,8 @@ export class WikipediaService {
       }
     }
 
-    const aumRaw = fields['aum'] || fields['assets'] || fields['assets_under_management'];
+    const aumRaw =
+      fields['aum'] || fields['assets'] || fields['assets_under_management'];
     if (aumRaw) {
       const aum = this.parseMoneyAmount(aumRaw);
       if (aum) result.aumUsd = aum;

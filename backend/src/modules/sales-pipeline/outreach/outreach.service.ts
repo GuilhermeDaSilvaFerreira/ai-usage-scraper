@@ -43,9 +43,9 @@ export class OutreachService {
     if (query.status) {
       qb.andWhere('campaign.status = :status', { status: query.status });
     }
-    if (query.contact_platform) {
-      qb.andWhere('campaign.contact_platform = :platform', {
-        platform: query.contact_platform,
+    if (query.contact_platforms && query.contact_platforms.length > 0) {
+      qb.andWhere('campaign.contact_platforms && :platforms', {
+        platforms: query.contact_platforms,
       });
     }
     if (query.firm_id) {
@@ -124,7 +124,7 @@ export class OutreachService {
       firm_id: dto.firm_id,
       person_id: dto.person_id,
       contacted_by: dto.contacted_by ?? null,
-      contact_platform: dto.contact_platform ?? null,
+      contact_platforms: dto.contact_platforms ?? [],
       notes: dto.notes ?? null,
       status: OutreachStatus.NOT_CONTACTED,
     });
@@ -147,8 +147,8 @@ export class OutreachService {
         campaign.first_contact_at = new Date();
       }
     }
-    if (dto.contact_platform !== undefined) {
-      campaign.contact_platform = dto.contact_platform;
+    if (dto.contact_platforms !== undefined) {
+      campaign.contact_platforms = dto.contact_platforms;
     }
     if (dto.contacted_by !== undefined && !campaign.contacted_by) {
       campaign.contacted_by = dto.contacted_by;

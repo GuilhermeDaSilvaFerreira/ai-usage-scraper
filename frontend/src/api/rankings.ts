@@ -5,6 +5,7 @@ import { api } from './client'
 export type RankingsQuery = {
   score_version?: string
   firm_type?: FirmType
+  firm_name?: string
   page?: number
   limit?: number
 }

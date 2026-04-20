@@ -17,8 +17,12 @@ export class OutreachCampaignResponseDto {
   @ApiProperty({ enum: OutreachStatus })
   status: OutreachStatus;
 
-  @ApiPropertyOptional({ enum: ContactPlatform, nullable: true })
-  contact_platform: ContactPlatform | null;
+  @ApiProperty({
+    enum: ContactPlatform,
+    isArray: true,
+    description: 'Communication channels used to reach the person',
+  })
+  contact_platforms: ContactPlatform[];
 
   @ApiPropertyOptional({ nullable: true })
   contacted_by: string | null;

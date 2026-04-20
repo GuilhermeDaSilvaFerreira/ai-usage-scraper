@@ -329,17 +329,23 @@ export class PipelineController {
       version: body?.version || defaults.version,
       weights: {
         ai_talent_density:
-          body?.weights?.ai_talent_density ?? defaults.weights.ai_talent_density,
+          body?.weights?.ai_talent_density ??
+          defaults.weights.ai_talent_density,
         public_ai_activity:
-          body?.weights?.public_ai_activity ?? defaults.weights.public_ai_activity,
+          body?.weights?.public_ai_activity ??
+          defaults.weights.public_ai_activity,
         ai_hiring_velocity:
-          body?.weights?.ai_hiring_velocity ?? defaults.weights.ai_hiring_velocity,
+          body?.weights?.ai_hiring_velocity ??
+          defaults.weights.ai_hiring_velocity,
         thought_leadership:
-          body?.weights?.thought_leadership ?? defaults.weights.thought_leadership,
+          body?.weights?.thought_leadership ??
+          defaults.weights.thought_leadership,
         vendor_partnerships:
-          body?.weights?.vendor_partnerships ?? defaults.weights.vendor_partnerships,
+          body?.weights?.vendor_partnerships ??
+          defaults.weights.vendor_partnerships,
         portfolio_ai_strategy:
-          body?.weights?.portfolio_ai_strategy ?? defaults.weights.portfolio_ai_strategy,
+          body?.weights?.portfolio_ai_strategy ??
+          defaults.weights.portfolio_ai_strategy,
       },
       thresholds: {
         min_signals_for_score:

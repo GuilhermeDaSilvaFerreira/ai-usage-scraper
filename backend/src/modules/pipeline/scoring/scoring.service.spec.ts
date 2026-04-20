@@ -256,10 +256,9 @@ describe('ScoringService', () => {
 
       await service.scoreFirm('firm-1');
 
-      expect(scoreRepo.query).toHaveBeenCalledWith(
-        expect.any(String),
-        [DEFAULT_SCORING_CONFIG.version],
-      );
+      expect(scoreRepo.query).toHaveBeenCalledWith(expect.any(String), [
+        DEFAULT_SCORING_CONFIG.version,
+      ]);
     });
 
     it('should save evidence only for entries with non-empty signalIds', async () => {

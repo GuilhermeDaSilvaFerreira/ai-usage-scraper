@@ -116,17 +116,30 @@ describe('OutreachService', () => {
       );
     });
 
-    it('applies contact_platform filter', async () => {
+    it('applies contact_platforms filter (overlap)', async () => {
       mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
 
       await service.findAll({
-        contact_platform: ContactPlatform.EMAIL,
+        contact_platforms: [ContactPlatform.EMAIL, ContactPlatform.LINKEDIN],
       } as any);
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'campaign.contact_platform = :platform',
-        { platform: ContactPlatform.EMAIL },
+        'campaign.contact_platforms && :platforms',
+        {
+          platforms: [ContactPlatform.EMAIL, ContactPlatform.LINKEDIN],
+        },
       );
+    });
+
+    it('does not apply contact_platforms filter when empty', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAll({ contact_platforms: [] } as any);
+
+      const platformCalls = mockQueryBuilder.andWhere.mock.calls.filter(
+        (call: any[]) => call[0] === 'campaign.contact_platforms && :platforms',
+      );
+      expect(platformCalls).toHaveLength(0);
     });
 
     it('applies firm_id filter', async () => {
@@ -244,7 +257,7 @@ describe('OutreachService', () => {
         firm_id: 'f1',
         person_id: 'p1',
         contacted_by: 'analyst',
-        contact_platform: ContactPlatform.EMAIL,
+        contact_platforms: [ContactPlatform.EMAIL, ContactPlatform.LINKEDIN],
         notes: 'test note',
       };
       const saved = { id: 'new-id', ...dto };
@@ -260,7 +273,7 @@ describe('OutreachService', () => {
         firm_id: 'f1',
         person_id: 'p1',
         contacted_by: 'analyst',
-        contact_platform: ContactPlatform.EMAIL,
+        contact_platforms: [ContactPlatform.EMAIL, ContactPlatform.LINKEDIN],
         notes: 'test note',
         status: OutreachStatus.NOT_CONTACTED,
       });
@@ -268,7 +281,7 @@ describe('OutreachService', () => {
       expect(result).toEqual(full);
     });
 
-    it('defaults optional fields to null', async () => {
+    it('defaults optional fields (platforms to empty array)', async () => {
       const dto = { firm_id: 'f1', person_id: 'p1' };
       const saved = { id: 'new-id' };
       mockCampaignRepo.create.mockReturnValue(saved);
@@ -281,7 +294,7 @@ describe('OutreachService', () => {
         firm_id: 'f1',
         person_id: 'p1',
         contacted_by: null,
-        contact_platform: null,
+        contact_platforms: [],
         notes: null,
         status: OutreachStatus.NOT_CONTACTED,
       });
@@ -293,7 +306,7 @@ describe('OutreachService', () => {
       id: 'c1',
       status: OutreachStatus.NOT_CONTACTED,
       contacted_by: null as string | null,
-      contact_platform: null as ContactPlatform | null,
+      contact_platforms: [] as ContactPlatform[],
       notes: null as string | null,
       outreach_message: null as string | null,
       first_contact_at: null as Date | null,
@@ -366,7 +379,7 @@ describe('OutreachService', () => {
       expect(campaign.contacted_by).toBe('original');
     });
 
-    it('updates contact_platform', async () => {
+    it('updates contact_platforms (multiple channels)', async () => {
       const campaign = baseCampaign();
       mockCampaignRepo.findOne
         .mockResolvedValueOnce(campaign)
@@ -374,10 +387,13 @@ describe('OutreachService', () => {
       mockCampaignRepo.save.mockResolvedValue(campaign);
 
       await service.update('c1', {
-        contact_platform: ContactPlatform.LINKEDIN,
+        contact_platforms: [ContactPlatform.LINKEDIN, ContactPlatform.EMAIL],
       });
 
-      expect(campaign.contact_platform).toBe(ContactPlatform.LINKEDIN);
+      expect(campaign.contact_platforms).toEqual([
+        ContactPlatform.LINKEDIN,
+        ContactPlatform.EMAIL,
+      ]);
     });
 
     it('updates notes', async () => {

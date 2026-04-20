@@ -23,10 +23,15 @@ export const outreachColDefs: ColDef<OutreachCampaign>[] = [
     valueFormatter: (p) => (p.value ? labelFromSnake(p.value) : '—'),
   },
   {
-    field: 'contact_platform',
-    headerName: 'Platform',
-    width: 120,
-    valueFormatter: (p) => (p.value ? labelFromSnake(p.value) : '—'),
+    headerName: 'Platforms',
+    field: 'contact_platforms',
+    width: 180,
+    valueGetter: (p) => p.data?.contact_platforms ?? [],
+    valueFormatter: (p) => {
+      const platforms = (p.value as string[] | undefined) ?? []
+      if (platforms.length === 0) return '—'
+      return platforms.map((v) => labelFromSnake(v)).join(', ')
+    },
   },
   {
     field: 'contacted_by',

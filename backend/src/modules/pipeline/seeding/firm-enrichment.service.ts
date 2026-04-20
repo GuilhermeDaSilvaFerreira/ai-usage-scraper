@@ -79,7 +79,6 @@ export class FirmEnrichmentService {
       `Enrichment: found ${firms.length} firms with missing data`,
     );
 
-
     let enriched = 0;
     let skipped = 0;
     let failed = 0;
@@ -91,7 +90,6 @@ export class FirmEnrichmentService {
       this.logger.log(
         `Enrichment batch ${batchNum}/${totalBatches} (${batch.length} firms)`,
       );
-
 
       const results = await Promise.allSettled(
         batch.map((firm) => {
@@ -105,7 +103,6 @@ export class FirmEnrichmentService {
         if (result.status === 'rejected') {
           failed++;
           this.logger.warn(`Enrichment failed: ${result.reason}`);
-
         } else if (result.value === 'skipped') {
           skipped++;
         } else if (result.value === true) {
@@ -198,7 +195,6 @@ export class FirmEnrichmentService {
       this.logger.debug(
         `Enriched "${firm.name}" — ${stillMissing.length === 0 ? 'all fields filled' : `still missing: ${stillMissing.join(', ')}`}`,
       );
-
     }
 
     return changed;
@@ -325,7 +321,6 @@ export class FirmEnrichmentService {
           error: error.message,
           stack: error.stack,
         });
-
       }
     }
     if (!result.website && topUrl) {

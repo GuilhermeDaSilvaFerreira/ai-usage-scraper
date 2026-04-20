@@ -45,9 +45,10 @@ export class OutreachCampaign extends UuidV7Entity {
   @Column({
     type: 'enum',
     enum: ContactPlatform,
-    nullable: true,
+    array: true,
+    default: [],
   })
-  contact_platform: ContactPlatform | null;
+  contact_platforms: ContactPlatform[];
 
   @Column({ type: 'varchar', length: 500, nullable: true })
   contacted_by: string | null;

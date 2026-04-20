@@ -105,7 +105,6 @@ export class PipelineOrchestratorService {
       `Auto-chain: queued collection for ${firms.length} firms (signals + people)`,
     );
 
-
     return {
       firmCount: firms.length,
       signalJobCount: firms.length,
@@ -180,6 +179,5 @@ export class PipelineOrchestratorService {
     await this.scoringQueue.add('score', { firmId }, { jobId });
 
     this.logger.log(`Auto-chain: queued scoring for firm ${firmId}`);
-
   }
 }
