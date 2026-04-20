@@ -78,16 +78,16 @@ describe('toScoringParametersJson', () => {
     const config: ScoringConfig = {
       version: 'v1.0',
       weights: {
-        aiTalentDensity: 0.25,
-        publicAIActivity: 0.2,
-        aiHiringVelocity: 0.2,
-        thoughtLeadership: 0.15,
-        vendorPartnerships: 0.1,
-        portfolioAIStrategy: 0.1,
+        ai_talent_density: 0.25,
+        public_ai_activity: 0.2,
+        ai_hiring_velocity: 0.2,
+        thought_leadership: 0.15,
+        vendor_partnerships: 0.1,
+        portfolio_ai_strategy: 0.1,
       },
       thresholds: {
-        minSignalsForScore: 1,
-        highConfidenceThreshold: 0.7,
+        min_signals_for_score: 1,
+        high_confidence_threshold: 0.7,
       },
     };
 
@@ -124,16 +124,16 @@ describe('toScoringParametersJson', () => {
     const config: ScoringConfig = {
       version: 'v2.0',
       weights: {
-        aiTalentDensity: 0,
-        publicAIActivity: 0,
-        aiHiringVelocity: 0,
-        thoughtLeadership: 0,
-        vendorPartnerships: 0,
-        portfolioAIStrategy: 0,
+        ai_talent_density: 0,
+        public_ai_activity: 0,
+        ai_hiring_velocity: 0,
+        thought_leadership: 0,
+        vendor_partnerships: 0,
+        portfolio_ai_strategy: 0,
       },
       thresholds: {
-        minSignalsForScore: 0,
-        highConfidenceThreshold: 0,
+        min_signals_for_score: 0,
+        high_confidence_threshold: 0,
       },
     };
 
@@ -148,16 +148,16 @@ describe('toScoringParametersJson', () => {
     const config: ScoringConfig = {
       version: 'v1.1',
       weights: {
-        aiTalentDensity: 0.166666,
-        publicAIActivity: 0.166666,
-        aiHiringVelocity: 0.166666,
-        thoughtLeadership: 0.166666,
-        vendorPartnerships: 0.166666,
-        portfolioAIStrategy: 0.16667,
+        ai_talent_density: 0.166666,
+        public_ai_activity: 0.166666,
+        ai_hiring_velocity: 0.166666,
+        thought_leadership: 0.166666,
+        vendor_partnerships: 0.166666,
+        portfolio_ai_strategy: 0.16667,
       },
       thresholds: {
-        minSignalsForScore: 3,
-        highConfidenceThreshold: 0.85,
+        min_signals_for_score: 3,
+        high_confidence_threshold: 0.85,
       },
     };
 
@@ -165,6 +165,12 @@ describe('toScoringParametersJson', () => {
 
     expect(result.weights.ai_talent_density).toBe(0.166666);
     expect(result.thresholds.high_confidence_threshold).toBe(0.85);
+  });
+
+  it('should produce a deep copy (not share references with the input config)', () => {
+    const result = toScoringParametersJson(DEFAULT_SCORING_CONFIG);
+    expect(result.weights).not.toBe(DEFAULT_SCORING_CONFIG.weights);
+    expect(result.thresholds).not.toBe(DEFAULT_SCORING_CONFIG.thresholds);
   });
 
   it('should not include the version field in the output', () => {

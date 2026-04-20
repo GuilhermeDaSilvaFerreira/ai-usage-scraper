@@ -40,9 +40,9 @@ export class ScoringService {
   ): Promise<FirmScore | null> {
     const signals = await this.signalRepo.find({ where: { firm_id: firmId } });
 
-    if (signals.length < config.thresholds.minSignalsForScore) {
+    if (signals.length < config.thresholds.min_signals_for_score) {
       this.logger.debug(
-        `Skipping firm ${firmId}: ${signals.length} signals (minimum: ${config.thresholds.minSignalsForScore})`,
+        `Skipping firm ${firmId}: ${signals.length} signals (minimum: ${config.thresholds.min_signals_for_score})`,
       );
 
       return null;
@@ -66,6 +66,7 @@ export class ScoringService {
       await this.scoreRepo.save(existingScore);
 
       await this.saveEvidence(existingScore.id, result.evidence);
+      await this.computeRanks(config.version);
       return existingScore;
     }
 
@@ -81,6 +82,7 @@ export class ScoringService {
     });
     await this.scoreRepo.save(firmScore);
     await this.saveEvidence(firmScore.id, result.evidence);
+    await this.computeRanks(config.version);
 
     return firmScore;
   }
@@ -177,20 +179,24 @@ export class ScoringService {
   }
 
   private async computeRanks(scoreVersion: string): Promise<void> {
-    const scores = await this.scoreRepo.find({
-      where: { score_version: scoreVersion },
-      order: { overall_score: 'DESC' },
-    });
-
-    for (let i = 0; i < scores.length; i++) {
-      scores[i].rank = i + 1;
-    }
-
-    await this.scoreRepo.save(scores);
-    this.logger.log(
-      `Computed ranks for ${scores.length} firms (version: ${scoreVersion})`,
+    const result: Array<{ id: string }> = await this.scoreRepo.query(
+      `UPDATE firm_scores AS fs
+       SET rank = sub.rnk
+       FROM (
+         SELECT id,
+                RANK() OVER (ORDER BY overall_score DESC) AS rnk
+         FROM firm_scores
+         WHERE score_version = $1
+       ) AS sub
+       WHERE fs.id = sub.id
+         AND fs.score_version = $1
+       RETURNING fs.id`,
+      [scoreVersion],
     );
 
+    this.logger.log(
+      `Computed ranks for ${result.length} firms (version: ${scoreVersion})`,
+    );
   }
 
   private async saveEvidence(

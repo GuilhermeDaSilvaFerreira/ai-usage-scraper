@@ -3,12 +3,14 @@ import { ExaService } from './exa.service';
 
 const mockSearchAndContents = jest.fn();
 const mockFindSimilarAndContents = jest.fn();
+const mockGetContents = jest.fn();
 jest.mock('exa-js', () => {
   return {
     __esModule: true,
     default: jest.fn().mockImplementation(() => ({
       searchAndContents: mockSearchAndContents,
       findSimilarAndContents: mockFindSimilarAndContents,
+      getContents: mockGetContents,
     })),
   };
 });
@@ -164,6 +166,69 @@ describe('ExaService', () => {
       mockSearchAndContents.mockRejectedValue(new Error('Exa API error'));
 
       const result = await service.search('query');
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getContents', () => {
+    it('should return empty array when client is null', async () => {
+      service = createService(undefined);
+      const result = await service.getContents(['https://example.com']);
+      expect(result).toEqual([]);
+      expect(mockGetContents).not.toHaveBeenCalled();
+    });
+
+    it('should return empty array when urls is empty', async () => {
+      service = createService('exa-test-key');
+      const result = await service.getContents([]);
+      expect(result).toEqual([]);
+      expect(mockGetContents).not.toHaveBeenCalled();
+    });
+
+    it('should return mapped results on success', async () => {
+      service = createService('exa-test-key');
+      mockGetContents.mockResolvedValue({
+        results: [
+          {
+            url: 'https://example.com/about',
+            title: 'About Us',
+            text: 'Rendered page body',
+            publishedDate: '2024-05-01',
+            author: 'Site',
+            score: 0.5,
+          },
+        ],
+      });
+
+      const result = await service.getContents(['https://example.com/about']);
+
+      expect(result).toEqual([
+        {
+          url: 'https://example.com/about',
+          title: 'About Us',
+          text: 'Rendered page body',
+          publishedDate: '2024-05-01',
+          author: 'Site',
+          score: 0.5,
+        },
+      ]);
+      expect(mockGetContents).toHaveBeenCalledWith(
+        ['https://example.com/about'],
+        { text: true },
+      );
+    });
+
+    it('should handle missing results array', async () => {
+      service = createService('exa-test-key');
+      mockGetContents.mockResolvedValue({});
+      const result = await service.getContents(['https://example.com']);
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array on API error', async () => {
+      service = createService('exa-test-key');
+      mockGetContents.mockRejectedValue(new Error('Exa API error'));
+      const result = await service.getContents(['https://example.com']);
       expect(result).toEqual([]);
     });
   });

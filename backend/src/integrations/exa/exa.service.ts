@@ -71,6 +71,35 @@ export class ExaService {
     });
   }
 
+  /**
+   * Fetch rendered contents for one or more URLs via Exa.
+   * Exa proxies through residential IPs and renders JS, which bypasses
+   * most WAF/bot challenges that block direct axios requests.
+   */
+  async getContents(urls: string[]): Promise<ExaSearchResult[]> {
+    if (!this.client || urls.length === 0) return [];
+
+    return exaRateLimiter.wrap(async () => {
+      try {
+        const result = await this.client!.getContents(urls, { text: true });
+
+        return (result.results ?? []).map((r) => ({
+          url: r.url ?? '',
+          title: r.title ?? '',
+          text: r.text ?? '',
+          publishedDate: r.publishedDate,
+          author: r.author,
+          score: r.score,
+        }));
+      } catch (error) {
+        this.logger.error(
+          `Exa getContents failed for [${urls.join(', ')}]: ${error}`,
+        );
+        return [];
+      }
+    });
+  }
+
   async findSimilar(url: string, numResults = 5): Promise<ExaSearchResult[]> {
     if (!this.client) return [];
 

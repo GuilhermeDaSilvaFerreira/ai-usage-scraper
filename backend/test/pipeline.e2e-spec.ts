@@ -205,8 +205,8 @@ describe('PipelineController (e2e)', () => {
         .expect(201);
 
       expect(res.body.config.version).toBe('v2.0-test');
-      expect(res.body.config.weights.aiTalentDensity).toBe(0.5);
-      expect(res.body.config.thresholds.minSignalsForScore).toBe(5);
+      expect(res.body.config.weights.ai_talent_density).toBe(0.5);
+      expect(res.body.config.thresholds.min_signals_for_score).toBe(5);
     });
   });
 

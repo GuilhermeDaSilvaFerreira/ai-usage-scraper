@@ -170,5 +170,5 @@ NestJS logs to stdout. In `NODE_ENV=development`, TypeORM also logs all SQL quer
 | Seeding finds 0 firms          | Missing or invalid `EXA_API_KEY`                                           | Check `.env`                                  |
 | LLM extraction skipped         | Missing `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY` if `LLM_PROVIDER=openai`) | Check `.env`                                  |
 | Collection hangs               | Rate limiter waiting on Exa/SEC                                            | Normal — check `pipeline/status` for progress |
-| Score is `null` for a firm     | Fewer signals than `minSignalsForScore` (default: 1)                       | Run collection first, or lower threshold      |
+| Score is `null` for a firm     | Fewer signals than `min_signals_for_score` (default: 1)                    | Run collection first, or lower threshold      |
 | Schema drift after code change | `synchronize: true` only in development                                    | Restart the app to apply entity changes       |

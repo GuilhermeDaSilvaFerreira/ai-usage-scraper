@@ -43,29 +43,15 @@ function createMockDimension(
   };
 }
 
-/**
- * The engine looks up weights using `(weights as Record<string, number>)[dimensionKey]`
- * where dimensionKey is snake_case (e.g. 'ai_talent_density'). Since the DimensionWeight
- * interface uses camelCase keys, we need to provide a config with snake_case keys when
- * testing weight application, or rely on the `?? 0` fallback.
- */
-function createSnakeCaseWeightConfig(
-  overrides: Partial<Record<string, any>> = {},
+function createConfig(
+  weightOverrides: Partial<ScoringConfig['weights']> = {},
 ): ScoringConfig {
   return {
+    ...DEFAULT_SCORING_CONFIG,
     version: 'test-v1',
     weights: {
-      ai_talent_density: 0.25,
-      public_ai_activity: 0.2,
-      ai_hiring_velocity: 0.2,
-      thought_leadership: 0.15,
-      vendor_partnerships: 0.1,
-      portfolio_ai_strategy: 0.1,
-      ...overrides,
-    } as any,
-    thresholds: {
-      minSignalsForScore: 1,
-      highConfidenceThreshold: 0.7,
+      ...DEFAULT_SCORING_CONFIG.weights,
+      ...weightOverrides,
     },
   };
 }
@@ -97,10 +83,13 @@ describe('ScoringEngine', () => {
     );
   });
 
-  it('should return zero score with empty dimensions when signals < minSignalsForScore', () => {
+  it('should return zero score with empty dimensions when signals < min_signals_for_score', () => {
     const config: ScoringConfig = {
       ...DEFAULT_SCORING_CONFIG,
-      thresholds: { minSignalsForScore: 5, highConfidenceThreshold: 0.7 },
+      thresholds: {
+        min_signals_for_score: 5,
+        high_confidence_threshold: 0.7,
+      },
     };
     const signals = [createMockSignal(), createMockSignal({ id: 's2' })];
 
@@ -114,7 +103,7 @@ describe('ScoringEngine', () => {
   });
 
   it('should call all dimension scorers and compute weighted scores', () => {
-    const config = createSnakeCaseWeightConfig();
+    const config = createConfig();
     const signals = [createMockSignal(), createMockSignal({ id: 's2' })];
 
     const result = engine.scoreFirm(signals, config);
@@ -168,7 +157,7 @@ describe('ScoringEngine', () => {
       evidence: [],
     });
 
-    const config = createSnakeCaseWeightConfig();
+    const config = createConfig();
     const signals = [createMockSignal()];
 
     const result = engine.scoreFirm(signals, config);
@@ -195,7 +184,7 @@ describe('ScoringEngine', () => {
     mockVendorPartnerships.score.mockReturnValue(zeroResult);
     mockPortfolioStrategy.score.mockReturnValue(zeroResult);
 
-    const config = createSnakeCaseWeightConfig({
+    const config = createConfig({
       ai_talent_density: 1.0,
       public_ai_activity: 0,
       ai_hiring_velocity: 0,
@@ -229,7 +218,7 @@ describe('ScoringEngine', () => {
     mockVendorPartnerships.score.mockReturnValue(normalResult);
     mockPortfolioStrategy.score.mockReturnValue(normalResult);
 
-    const config = createSnakeCaseWeightConfig();
+    const config = createConfig();
     const signals = [createMockSignal()];
 
     const result = engine.scoreFirm(signals, config);
@@ -284,7 +273,7 @@ describe('ScoringEngine', () => {
     mockVendorPartnerships.score.mockReturnValue(zeroResult);
     mockPortfolioStrategy.score.mockReturnValue(zeroResult);
 
-    const config = createSnakeCaseWeightConfig();
+    const config = createConfig();
     const signals = [createMockSignal()];
 
     const result = engine.scoreFirm(signals, config);
@@ -314,7 +303,7 @@ describe('ScoringEngine', () => {
     mockVendorPartnerships.score.mockReturnValue(zeroResult);
     mockPortfolioStrategy.score.mockReturnValue(zeroResult);
 
-    const config = createSnakeCaseWeightConfig({ ai_talent_density: 0.33 });
+    const config = createConfig({ ai_talent_density: 0.33 });
     const signals = [createMockSignal()];
 
     const result = engine.scoreFirm(signals, config);
@@ -336,7 +325,7 @@ describe('ScoringEngine', () => {
   });
 
   it('should set maxPossible to 100 for each dimension in the result', () => {
-    const config = createSnakeCaseWeightConfig();
+    const config = createConfig();
     const signals = [createMockSignal()];
 
     const result = engine.scoreFirm(signals, config);
@@ -346,19 +335,15 @@ describe('ScoringEngine', () => {
     }
   });
 
-  it('should use weight 0 for unknown dimension keys via fallback', () => {
-    const config: ScoringConfig = {
-      version: 'test',
-      weights: {
-        aiTalentDensity: 0,
-        publicAIActivity: 0,
-        aiHiringVelocity: 0,
-        thoughtLeadership: 0,
-        vendorPartnerships: 0,
-        portfolioAIStrategy: 0,
-      },
-      thresholds: { minSignalsForScore: 1, highConfidenceThreshold: 0.7 },
-    };
+  it('should produce overallScore=0 when all weights are 0', () => {
+    const config = createConfig({
+      ai_talent_density: 0,
+      public_ai_activity: 0,
+      ai_hiring_velocity: 0,
+      thought_leadership: 0,
+      vendor_partnerships: 0,
+      portfolio_ai_strategy: 0,
+    });
     const signals = [createMockSignal()];
 
     const result = engine.scoreFirm(signals, config);

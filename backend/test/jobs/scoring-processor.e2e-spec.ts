@@ -194,10 +194,10 @@ describe('ScoringProcessor / ScoringService E2E', () => {
       expect(params.weights).toBeDefined();
       expect(params.thresholds).toBeDefined();
       expect(params.thresholds.min_signals_for_score).toBe(
-        DEFAULT_SCORING_CONFIG.thresholds.minSignalsForScore,
+        DEFAULT_SCORING_CONFIG.thresholds.min_signals_for_score,
       );
       expect(params.thresholds.high_confidence_threshold).toBe(
-        DEFAULT_SCORING_CONFIG.thresholds.highConfidenceThreshold,
+        DEFAULT_SCORING_CONFIG.thresholds.high_confidence_threshold,
       );
     });
   });
@@ -340,16 +340,16 @@ describe('ScoringProcessor / ScoringService E2E', () => {
       const customConfig = {
         version: 'v2.0',
         weights: {
-          aiTalentDensity: 0.3,
-          publicAIActivity: 0.15,
-          aiHiringVelocity: 0.25,
-          thoughtLeadership: 0.1,
-          vendorPartnerships: 0.1,
-          portfolioAIStrategy: 0.1,
+          ai_talent_density: 0.3,
+          public_ai_activity: 0.15,
+          ai_hiring_velocity: 0.25,
+          thought_leadership: 0.1,
+          vendor_partnerships: 0.1,
+          portfolio_ai_strategy: 0.1,
         },
         thresholds: {
-          minSignalsForScore: 1,
-          highConfidenceThreshold: 0.8,
+          min_signals_for_score: 1,
+          high_confidence_threshold: 0.8,
         },
       };
 

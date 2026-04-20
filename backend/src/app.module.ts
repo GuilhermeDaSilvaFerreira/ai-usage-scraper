@@ -20,6 +20,7 @@ import { ExaModule } from './integrations/exa/exa.module.js';
 import { OpenAIModule } from './integrations/openai/openai.module.js';
 import { AnthropicModule } from './integrations/anthropic/anthropic.module.js';
 import { SecEdgarModule } from './integrations/sec-edgar/sec-edgar.module.js';
+import { WikipediaModule } from './integrations/wikipedia/wikipedia.module.js';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { SecEdgarModule } from './integrations/sec-edgar/sec-edgar.module.js';
     OpenAIModule,
     AnthropicModule,
     SecEdgarModule,
+    WikipediaModule,
     FirmsModule,
     PeopleModule,
     RankingsModule,

@@ -1,19 +1,21 @@
 export interface DimensionWeight {
-  aiTalentDensity: number;
-  publicAIActivity: number;
-  aiHiringVelocity: number;
-  thoughtLeadership: number;
-  vendorPartnerships: number;
-  portfolioAIStrategy: number;
+  ai_talent_density: number;
+  public_ai_activity: number;
+  ai_hiring_velocity: number;
+  thought_leadership: number;
+  vendor_partnerships: number;
+  portfolio_ai_strategy: number;
+}
+
+export interface ScoringThresholds {
+  min_signals_for_score: number;
+  high_confidence_threshold: number;
 }
 
 export interface ScoringConfig {
   version: string;
   weights: DimensionWeight;
-  thresholds: {
-    minSignalsForScore: number;
-    highConfidenceThreshold: number;
-  };
+  thresholds: ScoringThresholds;
 }
 
 export const DIMENSION_SCORE_KEYS = [
@@ -59,10 +61,7 @@ export function toDimensionScoreJson(d: DimensionScore): DimensionScoreJson {
 
 export type ScoringWeightsJson = Record<DimensionScoreKey, number>;
 
-export interface ScoringThresholdsJson {
-  min_signals_for_score: number;
-  high_confidence_threshold: number;
-}
+export type ScoringThresholdsJson = ScoringThresholds;
 
 export interface ScoringParametersJson {
   weights: ScoringWeightsJson;
@@ -73,18 +72,8 @@ export function toScoringParametersJson(
   config: ScoringConfig,
 ): ScoringParametersJson {
   return {
-    weights: {
-      ai_talent_density: config.weights.aiTalentDensity,
-      public_ai_activity: config.weights.publicAIActivity,
-      ai_hiring_velocity: config.weights.aiHiringVelocity,
-      thought_leadership: config.weights.thoughtLeadership,
-      vendor_partnerships: config.weights.vendorPartnerships,
-      portfolio_ai_strategy: config.weights.portfolioAIStrategy,
-    },
-    thresholds: {
-      min_signals_for_score: config.thresholds.minSignalsForScore,
-      high_confidence_threshold: config.thresholds.highConfidenceThreshold,
-    },
+    weights: { ...config.weights },
+    thresholds: { ...config.thresholds },
   };
 }
 
@@ -106,15 +95,15 @@ export interface EvidenceEntry {
 export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
   version: 'v1.0',
   weights: {
-    aiTalentDensity: 0.25,
-    publicAIActivity: 0.2,
-    aiHiringVelocity: 0.2,
-    thoughtLeadership: 0.15,
-    vendorPartnerships: 0.1,
-    portfolioAIStrategy: 0.1,
+    ai_talent_density: 0.25,
+    public_ai_activity: 0.2,
+    ai_hiring_velocity: 0.2,
+    thought_leadership: 0.15,
+    vendor_partnerships: 0.1,
+    portfolio_ai_strategy: 0.1,
   },
   thresholds: {
-    minSignalsForScore: 1,
-    highConfidenceThreshold: 0.7,
+    min_signals_for_score: 1,
+    high_confidence_threshold: 0.7,
   },
 };

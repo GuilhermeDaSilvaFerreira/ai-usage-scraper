@@ -27,6 +27,7 @@ function createMockRepo() {
     save: jest.fn((entity: any) => Promise.resolve(entity)),
     delete: jest.fn().mockResolvedValue({ affected: 1 }),
     createQueryBuilder: jest.fn(),
+    query: jest.fn().mockResolvedValue([]),
   };
 }
 
@@ -71,7 +72,10 @@ describe('ScoringService', () => {
       signalRepo.find.mockResolvedValue([createMockSignal()]);
       const config: ScoringConfig = {
         ...DEFAULT_SCORING_CONFIG,
-        thresholds: { minSignalsForScore: 5, highConfidenceThreshold: 0.7 },
+        thresholds: {
+          min_signals_for_score: 5,
+          high_confidence_threshold: 0.7,
+        },
       };
 
       const result = await service.scoreFirm('firm-1', config);
@@ -211,6 +215,51 @@ describe('ScoringService', () => {
       await service.scoreFirm('firm-1');
 
       expect(evidenceRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('should compute ranks after scoring a single firm so rank is never left null', async () => {
+      signalRepo.find.mockResolvedValue([createMockSignal()]);
+      scoreRepo.findOne.mockResolvedValue(null);
+      scoringEngine.scoreFirm.mockReturnValue({
+        overallScore: 42,
+        dimensions: [],
+        signalCount: 1,
+        evidence: [],
+      });
+
+      await service.scoreFirm('firm-1');
+
+      expect(scoreRepo.query).toHaveBeenCalledWith(
+        expect.stringMatching(/UPDATE\s+firm_scores[\s\S]+RANK\(\)\s+OVER/i),
+        [DEFAULT_SCORING_CONFIG.version],
+      );
+    });
+
+    it('should compute ranks even when updating an existing score', async () => {
+      signalRepo.find.mockResolvedValue([createMockSignal()]);
+      scoreRepo.findOne.mockResolvedValue({
+        id: 'existing-id',
+        firm_id: 'firm-1',
+        score_version: 'v1.0',
+        overall_score: 0,
+        dimension_scores: {},
+        signal_count: 0,
+        scoring_parameters: {},
+        scored_at: new Date('2025-01-01'),
+      });
+      scoringEngine.scoreFirm.mockReturnValue({
+        overallScore: 75,
+        dimensions: [],
+        signalCount: 1,
+        evidence: [],
+      });
+
+      await service.scoreFirm('firm-1');
+
+      expect(scoreRepo.query).toHaveBeenCalledWith(
+        expect.any(String),
+        [DEFAULT_SCORING_CONFIG.version],
+      );
     });
 
     it('should save evidence only for entries with non-empty signalIds', async () => {
@@ -359,23 +408,12 @@ describe('ScoringService', () => {
         evidence: [],
       });
 
-      const rankedScores = [
-        { id: 'score-1', overall_score: 80, rank: null },
-        { id: 'score-2', overall_score: 50, rank: null },
-      ];
-      scoreRepo.find.mockResolvedValue(rankedScores);
-
       await service.scoreAllFirms();
 
-      expect(scoreRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { score_version: DEFAULT_SCORING_CONFIG.version },
-          order: { overall_score: 'DESC' },
-        }),
+      expect(scoreRepo.query).toHaveBeenCalledWith(
+        expect.stringMatching(/UPDATE\s+firm_scores[\s\S]+RANK\(\)\s+OVER/i),
+        [DEFAULT_SCORING_CONFIG.version],
       );
-      expect(rankedScores[0].rank).toBe(1);
-      expect(rankedScores[1].rank).toBe(2);
-      expect(scoreRepo.save).toHaveBeenCalledWith(rankedScores);
     });
 
     it('should mark job COMPLETED with scored/failed metadata on success', async () => {

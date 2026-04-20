@@ -6,8 +6,8 @@ import * as cheerio from 'cheerio';
 import { Firm } from '../../../database/entities/firm.entity.js';
 import { FirmType } from '../../../common/enums/index.js';
 import { ExaService } from '../../../integrations/exa/exa.service.js';
+import { WikipediaService } from '../../../integrations/wikipedia/wikipedia.service.js';
 import {
-  webRateLimiter,
   secEdgarRateLimiter,
   extractHttpErrorDetails,
   CommonLogger,
@@ -54,6 +54,7 @@ export class FirmEnrichmentService {
     @InjectRepository(Firm)
     private readonly firmRepo: Repository<Firm>,
     private readonly exa: ExaService,
+    private readonly wikipedia: WikipediaService,
     private readonly config: ConfigService,
   ) {
     this.secEdgarUserAgent =
@@ -140,62 +141,40 @@ export class FirmEnrichmentService {
   ): Promise<boolean> {
     let changed = false;
 
-    if (
-      missing.some((f) =>
-        [
-          'website',
-          'description',
-          'firm_type',
-          'founded_year',
-          'headquarters',
-          'aum_usd',
-        ].includes(f),
-      )
-    ) {
-      const exaData = await this.enrichFromExa(firm.name);
-      if (exaData.website && !firm.website) {
-        firm.website = exaData.website;
-        changed = true;
-      }
-      if (exaData.description && !firm.description) {
-        firm.description = exaData.description;
-        changed = true;
-      }
-      if (exaData.firmType && !firm.firm_type) {
-        firm.firm_type = exaData.firmType;
-        changed = true;
-      }
-      if (exaData.foundedYear && !firm.founded_year) {
-        firm.founded_year = exaData.foundedYear;
-        changed = true;
-      }
-      if (exaData.headquarters && !firm.headquarters) {
-        firm.headquarters = exaData.headquarters;
-        changed = true;
-      }
-      if (exaData.aumUsd && !firm.aum_usd) {
-        firm.aum_usd = exaData.aumUsd;
-        changed = true;
-      }
-    }
+    const wantsExaFields = missing.some((f) =>
+      [
+        'website',
+        'description',
+        'firm_type',
+        'founded_year',
+        'headquarters',
+        'aum_usd',
+      ].includes(f),
+    );
+
+    // Run Exa (search-grounded prose) and Wikipedia (structured infobox) in
+    // parallel. They cover different long-tails of firms, so combining them
+    // boosts fill rate without lengthening the critical path.
+    const [exaData, wikiData] = await Promise.all([
+      wantsExaFields ? this.enrichFromExa(firm.name) : Promise.resolve({}),
+      wantsExaFields
+        ? this.enrichFromWikipedia(firm.name)
+        : Promise.resolve({}),
+    ]);
+
+    // Wikipedia first: infobox values are typically high-quality structured
+    // data. Exa fills any remaining gaps from search snippets.
+    if (this.applyEnrichment(firm, wikiData)) changed = true;
+    if (this.applyEnrichment(firm, exaData)) changed = true;
 
     if (
       firm.website &&
-      missing.some((f) => ['description', 'founded_year'].includes(f))
+      missing.some((f) =>
+        ['description', 'founded_year', 'headquarters'].includes(f),
+      )
     ) {
       const webData = await this.enrichFromWebsite(firm.website, firm.name);
-      if (webData.description && !firm.description) {
-        firm.description = webData.description;
-        changed = true;
-      }
-      if (webData.foundedYear && !firm.founded_year) {
-        firm.founded_year = webData.foundedYear;
-        changed = true;
-      }
-      if (webData.headquarters && !firm.headquarters) {
-        firm.headquarters = webData.headquarters;
-        changed = true;
-      }
+      if (this.applyEnrichment(firm, webData)) changed = true;
     }
 
     if (
@@ -223,6 +202,81 @@ export class FirmEnrichmentService {
     }
 
     return changed;
+  }
+
+  /**
+   * Copy any non-null fields from an enrichment result onto the firm,
+   * but only when the firm doesn't already have a value for that field.
+   * Returns true if anything changed.
+   */
+  private applyEnrichment(
+    firm: Firm,
+    data: Partial<{
+      website: string;
+      description: string;
+      firmType: FirmType;
+      foundedYear: number;
+      headquarters: string;
+      aumUsd: number;
+    }>,
+  ): boolean {
+    let changed = false;
+    if (data.website && !firm.website) {
+      firm.website = data.website;
+      changed = true;
+    }
+    if (data.description && !firm.description) {
+      firm.description = data.description;
+      changed = true;
+    }
+    if (data.firmType && !firm.firm_type) {
+      firm.firm_type = data.firmType;
+      changed = true;
+    }
+    if (data.foundedYear && !firm.founded_year) {
+      firm.founded_year = data.foundedYear;
+      changed = true;
+    }
+    if (data.headquarters && !firm.headquarters) {
+      firm.headquarters = data.headquarters;
+      changed = true;
+    }
+    if (data.aumUsd && !firm.aum_usd) {
+      firm.aum_usd = data.aumUsd;
+      changed = true;
+    }
+    return changed;
+  }
+
+  private async enrichFromWikipedia(firmName: string): Promise<
+    Partial<{
+      description: string;
+      foundedYear: number;
+      headquarters: string;
+      aumUsd: number;
+    }>
+  > {
+    try {
+      const info = await this.wikipedia.getFirmInfo(firmName);
+      if (!info) return {};
+      const result: Partial<{
+        description: string;
+        foundedYear: number;
+        headquarters: string;
+        aumUsd: number;
+      }> = {};
+      if (info.description) result.description = info.description;
+      if (info.foundedYear) result.foundedYear = info.foundedYear;
+      if (info.headquarters) result.headquarters = info.headquarters;
+      if (info.aumUsd) result.aumUsd = info.aumUsd;
+      return result;
+    } catch (error) {
+      this.logger.debug('Wikipedia enrichment failed', {
+        firmName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return {};
+    }
   }
 
   private async enrichFromExa(firmName: string): Promise<
@@ -332,6 +386,12 @@ export class FirmEnrichmentService {
     return result;
   }
 
+  /**
+   * Pull description / founded / HQ from the firm's own website, but route
+   * the requests through Exa.getContents instead of direct axios. Exa renders
+   * JS and uses residential IPs, so it bypasses Cloudflare/Akamai WAFs that
+   * routinely 403 our crawler on enterprise PE/IB sites.
+   */
   private async enrichFromWebsite(
     website: string,
     firmName: string,
@@ -348,50 +408,66 @@ export class FirmEnrichmentService {
       headquarters: string;
     }> = {};
 
-    const pagesToTry = ['/', '/about', '/about-us', '/firm'];
+    const pagesToTry = [
+      '/',
+      '/about',
+      '/about-us',
+      '/firm',
+      '/our-firm',
+      '/who-we-are',
+      '/company',
+      '/overview',
+    ];
 
-    for (const path of pagesToTry) {
-      try {
-        const url = new URL(path, website).toString();
-        const text = await this.fetchPageText(url);
-        if (!text || text.length < 50) continue;
+    let urls: string[];
+    try {
+      urls = pagesToTry.map((p) => new URL(p, website).toString());
+    } catch (error) {
+      this.logger.debug('Invalid firm website URL', {
+        website,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return result;
+    }
 
-        if (!result.description) {
-          const desc = this.extractDescription(text, firmName);
-          if (desc) result.description = desc;
-        }
+    const contents = await this.exa.getContents(urls);
+    if (contents.length === 0) return result;
 
-        if (!result.foundedYear) {
-          const match = text.match(
-            /(?:founded|established|since|started)\s+(?:in\s+)?(\d{4})/i,
-          );
-          if (match) {
-            const year = parseInt(match[1], 10);
-            if (year >= 1900 && year <= new Date().getFullYear()) {
-              result.foundedYear = year;
-            }
+    for (const page of contents) {
+      const text = (page.text || '').replace(/\s+/g, ' ').trim();
+      if (text.length < 50) continue;
+
+      if (!result.description) {
+        const desc = this.extractDescription(text, firmName);
+        if (desc) result.description = desc;
+      }
+
+      if (!result.foundedYear) {
+        const match = text.match(
+          /(?:founded|established|since|started)\s+(?:in\s+)?(\d{4})/i,
+        );
+        if (match) {
+          const year = parseInt(match[1], 10);
+          if (year >= 1900 && year <= new Date().getFullYear()) {
+            result.foundedYear = year;
           }
         }
+      }
 
-        if (!result.headquarters) {
-          const hqMatch = text.match(
-            /(?:headquartered|based|offices?)\s+in\s+([A-Z][A-Za-z\s,]+(?:,\s*[A-Z]{2,})?)(?:\.|,|\s)/,
-          );
-          if (hqMatch) {
-            const hq = hqMatch[1].trim();
-            if (hq.length > 3 && hq.length < 100) {
-              result.headquarters = hq;
-            }
+      if (!result.headquarters) {
+        const hqMatch = text.match(
+          /(?:headquartered|based|offices?)\s+in\s+([A-Z][A-Za-z\s,]+(?:,\s*[A-Z]{2,})?)(?:\.|,|\s)/,
+        );
+        if (hqMatch) {
+          const hq = hqMatch[1].trim();
+          if (hq.length > 3 && hq.length < 100) {
+            result.headquarters = hq;
           }
         }
+      }
 
-        if (result.description && result.foundedYear) break;
-      } catch (error) {
-        this.logger.error('Error enriching from website', {
-          error: error.message,
-          stack: error.stack,
-        });
-
+      if (result.description && result.foundedYear && result.headquarters) {
+        break;
       }
     }
 
@@ -675,29 +751,6 @@ export class FirmEnrichmentService {
     const n1 = normalize(name1);
     const n2 = normalize(name2);
     return n1.includes(n2) || n2.includes(n1);
-  }
-
-  private async fetchPageText(url: string): Promise<string | null> {
-    return webRateLimiter.wrap(async () => {
-      try {
-        const resp = await axios.get(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; PEIntelligenceBot/1.0)',
-          },
-          timeout: 10000,
-          maxRedirects: 3,
-        });
-        const $ = cheerio.load(resp.data as string);
-        $('script, style, nav, footer, header, aside').remove();
-        return $('body').text().replace(/\s+/g, ' ').trim();
-      } catch (error) {
-        this.logger.debug('Failed to fetch page text', {
-          ...extractHttpErrorDetails(error),
-        });
-
-        return null;
-      }
-    });
   }
 
   private extractDescription(text: string, firmName: string): string | null {

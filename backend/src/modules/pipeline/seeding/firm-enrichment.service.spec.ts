@@ -1,5 +1,6 @@
 import { FirmEnrichmentService } from './firm-enrichment.service';
 import { ExaService } from '../../../integrations/exa/exa.service';
+import { WikipediaService } from '../../../integrations/wikipedia/wikipedia.service';
 import { ConfigService } from '@nestjs/config';
 import { Firm } from '../../../database/entities/firm.entity';
 import { FirmType } from '../../../common/enums';
@@ -15,9 +16,6 @@ jest.mock('cheerio', () => ({
 }));
 
 jest.mock('../../../common/utils/index', () => ({
-  webRateLimiter: {
-    wrap: jest.fn((fn: () => Promise<any>) => fn()),
-  },
   secEdgarRateLimiter: {
     wrap: jest.fn((fn: () => Promise<any>) => fn()),
   },
@@ -71,6 +69,7 @@ describe('FirmEnrichmentService', () => {
   let service: FirmEnrichmentService;
   let firmRepo: any;
   let exa: jest.Mocked<ExaService>;
+  let wikipedia: jest.Mocked<WikipediaService>;
   let config: jest.Mocked<ConfigService>;
 
   beforeEach(() => {
@@ -81,12 +80,16 @@ describe('FirmEnrichmentService', () => {
     exa = {
       search: jest.fn().mockResolvedValue([]),
       findSimilar: jest.fn().mockResolvedValue([]),
+      getContents: jest.fn().mockResolvedValue([]),
+    } as any;
+    wikipedia = {
+      getFirmInfo: jest.fn().mockResolvedValue(null),
     } as any;
     config = {
       get: jest.fn().mockReturnValue('TestAgent admin@test.com'),
     } as any;
 
-    service = new FirmEnrichmentService(firmRepo, exa, config);
+    service = new FirmEnrichmentService(firmRepo, exa, wikipedia, config);
     jest.clearAllMocks();
   });
 
@@ -152,12 +155,13 @@ describe('FirmEnrichmentService', () => {
       const bodyText =
         'Web Firm Partners is a premier growth equity firm. The company was established in 1998. Headquartered in San Francisco, CA.';
 
-      const mock$ = jest.fn() as any;
-      mock$.mockReturnValue({
-        remove: jest.fn(),
-        text: jest.fn().mockReturnValue(bodyText),
-      });
-      mockedCheerioLoad.mockReturnValue(mock$);
+      exa.getContents.mockResolvedValue([
+        {
+          url: 'https://webfirm.com/',
+          title: 'Web Firm',
+          text: bodyText,
+        },
+      ]);
       (mockedAxios.get as jest.Mock).mockImplementation(async (url: string) => {
         if (url.includes('sec.gov') || url.includes('adviserinfo'))
           return { data: '' };
@@ -167,6 +171,7 @@ describe('FirmEnrichmentService', () => {
       const result = await service.enrichFirmsWithGaps();
 
       expect(result.enriched).toBe(1);
+      expect(exa.getContents).toHaveBeenCalled();
     });
 
     it('should enrich from SEC multi-strategy when sec_crd_number is missing', async () => {

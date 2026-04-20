@@ -324,35 +324,30 @@ export class PipelineController {
   }
 
   private buildScoringConfig(body?: ScoreConfigDto): ScoringConfig {
+    const defaults = DEFAULT_SCORING_CONFIG;
     return {
-      version: body?.version || DEFAULT_SCORING_CONFIG.version,
+      version: body?.version || defaults.version,
       weights: {
-        aiTalentDensity:
-          body?.weights?.ai_talent_density ??
-          DEFAULT_SCORING_CONFIG.weights.aiTalentDensity,
-        publicAIActivity:
-          body?.weights?.public_ai_activity ??
-          DEFAULT_SCORING_CONFIG.weights.publicAIActivity,
-        aiHiringVelocity:
-          body?.weights?.ai_hiring_velocity ??
-          DEFAULT_SCORING_CONFIG.weights.aiHiringVelocity,
-        thoughtLeadership:
-          body?.weights?.thought_leadership ??
-          DEFAULT_SCORING_CONFIG.weights.thoughtLeadership,
-        vendorPartnerships:
-          body?.weights?.vendor_partnerships ??
-          DEFAULT_SCORING_CONFIG.weights.vendorPartnerships,
-        portfolioAIStrategy:
-          body?.weights?.portfolio_ai_strategy ??
-          DEFAULT_SCORING_CONFIG.weights.portfolioAIStrategy,
+        ai_talent_density:
+          body?.weights?.ai_talent_density ?? defaults.weights.ai_talent_density,
+        public_ai_activity:
+          body?.weights?.public_ai_activity ?? defaults.weights.public_ai_activity,
+        ai_hiring_velocity:
+          body?.weights?.ai_hiring_velocity ?? defaults.weights.ai_hiring_velocity,
+        thought_leadership:
+          body?.weights?.thought_leadership ?? defaults.weights.thought_leadership,
+        vendor_partnerships:
+          body?.weights?.vendor_partnerships ?? defaults.weights.vendor_partnerships,
+        portfolio_ai_strategy:
+          body?.weights?.portfolio_ai_strategy ?? defaults.weights.portfolio_ai_strategy,
       },
       thresholds: {
-        minSignalsForScore:
+        min_signals_for_score:
           body?.thresholds?.min_signals_for_score ??
-          DEFAULT_SCORING_CONFIG.thresholds.minSignalsForScore,
-        highConfidenceThreshold:
+          defaults.thresholds.min_signals_for_score,
+        high_confidence_threshold:
           body?.thresholds?.high_confidence_threshold ??
-          DEFAULT_SCORING_CONFIG.thresholds.highConfidenceThreshold,
+          defaults.thresholds.high_confidence_threshold,
       },
     };
   }

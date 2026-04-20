@@ -4,6 +4,7 @@ import {
   ScoringConfig,
   ScoringResult,
   DimensionScore,
+  DimensionScoreKey,
   EvidenceEntry,
   DEFAULT_SCORING_CONFIG,
 } from '../../../common/interfaces/index.js';
@@ -17,7 +18,7 @@ import { BaseDimension } from './dimensions/base.dimension.js';
 
 @Injectable()
 export class ScoringEngine {
-  private readonly dimensionScorers: Map<string, BaseDimension>;
+  private readonly dimensionScorers: Map<DimensionScoreKey, BaseDimension>;
 
   constructor(
     private readonly aiTalent: AiTalentDimension,
@@ -27,20 +28,21 @@ export class ScoringEngine {
     private readonly vendorPartnerships: VendorPartnershipsDimension,
     private readonly portfolioStrategy: PortfolioStrategyDimension,
   ) {
-    this.dimensionScorers = new Map<string, BaseDimension>();
-    this.dimensionScorers.set('ai_talent_density', this.aiTalent);
-    this.dimensionScorers.set('public_ai_activity', this.publicActivity);
-    this.dimensionScorers.set('ai_hiring_velocity', this.hiringSignals);
-    this.dimensionScorers.set('thought_leadership', this.thoughtLeadership);
-    this.dimensionScorers.set('vendor_partnerships', this.vendorPartnerships);
-    this.dimensionScorers.set('portfolio_ai_strategy', this.portfolioStrategy);
+    this.dimensionScorers = new Map<DimensionScoreKey, BaseDimension>([
+      ['ai_talent_density', this.aiTalent],
+      ['public_ai_activity', this.publicActivity],
+      ['ai_hiring_velocity', this.hiringSignals],
+      ['thought_leadership', this.thoughtLeadership],
+      ['vendor_partnerships', this.vendorPartnerships],
+      ['portfolio_ai_strategy', this.portfolioStrategy],
+    ]);
   }
 
   scoreFirm(
     signals: FirmSignal[],
     config: ScoringConfig = DEFAULT_SCORING_CONFIG,
   ): ScoringResult {
-    if (signals.length < config.thresholds.minSignalsForScore) {
+    if (signals.length < config.thresholds.min_signals_for_score) {
       return {
         overallScore: 0,
         dimensions: [],
@@ -56,8 +58,7 @@ export class ScoringEngine {
     const weights = config.weights;
 
     for (const [dimensionKey, scorer] of this.dimensionScorers.entries()) {
-      const weight =
-        (weights as unknown as Record<string, number>)[dimensionKey] ?? 0;
+      const weight = weights[dimensionKey] ?? 0;
       const result = scorer.score(signals);
 
       const normalizedScore =
