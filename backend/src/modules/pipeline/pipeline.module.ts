@@ -39,6 +39,8 @@ import { HiringCollector } from './collection/collectors/hiring.collector.js';
 import { ConferenceCollector } from './collection/collectors/conference.collector.js';
 import { WebsiteCollector } from './collection/collectors/website.collector.js';
 import { LinkedInCollector } from './collection/collectors/linkedin.collector.js';
+import { SecAdvCollector } from './collection/collectors/sec-adv.collector.js';
+import { LlmPeopleExtractor } from './collection/llm-people-extractor.js';
 
 import { ExtractionPipelineService } from './extraction/extraction-pipeline.service.js';
 import { ExtractionProcessor } from './extraction/extraction.processor.js';
@@ -111,6 +113,8 @@ import { PortfolioStrategyDimension } from './scoring/dimensions/portfolio-strat
     ConferenceCollector,
     WebsiteCollector,
     LinkedInCollector,
+    SecAdvCollector,
+    LlmPeopleExtractor,
 
     // Extraction
     ExtractionPipelineService,

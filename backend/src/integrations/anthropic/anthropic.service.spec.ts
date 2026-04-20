@@ -1,6 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 import { AnthropicService } from './anthropic.service';
-import { LlmExtractionRequest } from '../openai/openai.service';
+import {
+  LlmExtractionRequest,
+  LlmPersonExtractionRequest,
+} from '../openai/openai.service';
 
 const mockCreate = jest.fn();
 jest.mock('@anthropic-ai/sdk', () => {
@@ -17,7 +20,9 @@ describe('AnthropicService', () => {
   let configGet: jest.Mock;
 
   function createService(apiKey: string | undefined) {
-    configGet = jest.fn().mockReturnValue(apiKey);
+    configGet = jest.fn((key: string) =>
+      key === 'llm.anthropicApiKey' ? apiKey : undefined,
+    );
     const configService = { get: configGet } as unknown as ConfigService;
     return new AnthropicService(configService);
   }
@@ -149,6 +154,150 @@ describe('AnthropicService', () => {
 
       const result = await service.extractSignals(request);
       expect(result).toEqual({ signals: [] });
+    });
+  });
+
+  describe('extractPeople', () => {
+    function buildRequest(
+      overrides: Partial<LlmPersonExtractionRequest> = {},
+    ): LlmPersonExtractionRequest {
+      return {
+        firmName: 'Acme Capital',
+        sources: [
+          {
+            id: 's0',
+            url: 'https://linkedin.com/in/jane',
+            title: 'Jane Doe - Chief Data Officer at Acme | LinkedIn',
+            snippet:
+              'Jane Doe leads data and AI initiatives at Acme Capital. About: 15+ years building ML systems.',
+            isLinkedIn: true,
+          },
+        ],
+        ...overrides,
+      };
+    }
+
+    it('returns empty map when client is null', async () => {
+      service = createService(undefined);
+      const result = await service.extractPeople(buildRequest());
+      expect(result).toEqual({ bySource: {} });
+      expect(mockCreate).not.toHaveBeenCalled();
+    });
+
+    it('uses claude haiku by default and marks system prompt cacheable', async () => {
+      service = createService('sk-test-key');
+      mockCreate.mockResolvedValue({
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              bySource: {
+                s0: [
+                  {
+                    fullName: 'Jane Doe',
+                    title: 'Chief Data Officer',
+                    bio: 'Leads data',
+                    email: null,
+                    linkedinUrl: 'https://linkedin.com/in/jane',
+                    confidence: 0.9,
+                  },
+                ],
+              },
+            }),
+          },
+        ],
+      });
+
+      const result = await service.extractPeople(buildRequest());
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: 'claude-haiku-4-5',
+          temperature: 0,
+          system: [
+            expect.objectContaining({
+              type: 'text',
+              cache_control: { type: 'ephemeral' },
+            }),
+          ],
+        }),
+      );
+      expect(result.bySource.s0?.[0].fullName).toBe('Jane Doe');
+    });
+
+    it('extracts JSON even when wrapped in surrounding prose', async () => {
+      service = createService('sk-test-key');
+      mockCreate.mockResolvedValue({
+        content: [
+          {
+            type: 'text',
+            text: `Here you go:\n${JSON.stringify({
+              bySource: {
+                s0: [{ fullName: 'Jane Doe', confidence: 0.9 }],
+              },
+            })}\nDone.`,
+          },
+        ],
+      });
+
+      const result = await service.extractPeople(buildRequest());
+      expect(result.bySource.s0).toHaveLength(1);
+    });
+
+    it('returns empty map on API error without throwing', async () => {
+      service = createService('sk-test-key');
+      mockCreate.mockRejectedValue(new Error('429'));
+
+      const result = await service.extractPeople(buildRequest());
+      expect(result).toEqual({ bySource: {} });
+    });
+
+    it('drops people without a full first+last name', async () => {
+      service = createService('sk-test-key');
+      mockCreate.mockResolvedValue({
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              bySource: {
+                s0: [
+                  { fullName: 'Cher', confidence: 0.9 },
+                  { fullName: 'Jane Doe', confidence: 0.9 },
+                ],
+              },
+            }),
+          },
+        ],
+      });
+
+      const result = await service.extractPeople(buildRequest());
+      expect(result.bySource.s0).toHaveLength(1);
+      expect(result.bySource.s0?.[0].fullName).toBe('Jane Doe');
+    });
+
+    it('batches sources according to llm.peopleBatchSize', async () => {
+      configGet = jest.fn((key: string) => {
+        if (key === 'llm.anthropicApiKey') return 'sk-test-key';
+        if (key === 'llm.peopleBatchSize') return 2;
+        return undefined;
+      });
+      service = new AnthropicService({
+        get: configGet,
+      } as unknown as ConfigService);
+      mockCreate.mockResolvedValue({
+        content: [{ type: 'text', text: '{"bySource":{}}' }],
+      });
+
+      const sources = Array.from({ length: 5 }, (_, i) => ({
+        id: `s${i}`,
+        url: `https://x.com/${i}`,
+        title: 't',
+        snippet: 'a fairly long snippet about a person at the firm '.repeat(2),
+      }));
+
+      await service.extractPeople({ firmName: 'Acme', sources });
+
+      expect(mockCreate).toHaveBeenCalledTimes(3);
     });
   });
 

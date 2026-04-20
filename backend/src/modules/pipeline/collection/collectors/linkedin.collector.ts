@@ -24,6 +24,7 @@ export class LinkedInCollector {
 
     const results = await this.runQueries(firmNames, queryTemplates, {
       includeDomains: ['linkedin.com'],
+      category: 'people',
     });
 
     this.logger.debug(
@@ -58,7 +59,11 @@ export class LinkedInCollector {
   private async runQueries(
     firmNames: string[],
     queryTemplates: Array<(name: string) => string>,
-    searchOpts: { includeDomains?: string[]; startPublishedDate?: string },
+    searchOpts: {
+      includeDomains?: string[];
+      startPublishedDate?: string;
+      category?: 'people' | 'company' | 'news';
+    },
   ): Promise<CollectedContent[]> {
     const results: CollectedContent[] = [];
 

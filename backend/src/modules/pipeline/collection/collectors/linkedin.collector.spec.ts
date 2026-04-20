@@ -47,7 +47,7 @@ describe('LinkedInCollector', () => {
       }
     });
 
-    it('passes includeDomains with linkedin.com', async () => {
+    it('passes includeDomains with linkedin.com and category people', async () => {
       mockExa.search.mockResolvedValue([]);
 
       await collector.collectPeople(['Acme']);
@@ -57,6 +57,7 @@ describe('LinkedInCollector', () => {
           expect.objectContaining({
             numResults: 5,
             includeDomains: ['linkedin.com'],
+            category: 'people',
           }),
         );
       }

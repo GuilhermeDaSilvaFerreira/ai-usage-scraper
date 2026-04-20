@@ -17,6 +17,8 @@ import {
 import { CollectedContent } from './collectors/news.collector';
 import { LinkedInCollector } from './collectors/linkedin.collector';
 import { WebsiteCollector } from './collectors/website.collector';
+import { SecAdvCollector } from './collectors/sec-adv.collector';
+import { LlmPeopleExtractor } from './llm-people-extractor';
 
 const FIRM_ID = 'firm-uuid-1';
 const FIRM: Partial<Firm> = {
@@ -103,6 +105,11 @@ const mockJobRepo = {
 
 const mockLinkedInCollector = { collectPeople: jest.fn() };
 const mockWebsiteCollector = { collectForPeople: jest.fn() };
+const mockSecAdvCollector = { collectForPeople: jest.fn() };
+const mockLlmExtractor = {
+  isEnabled: jest.fn().mockReturnValue(true),
+  extractForFirm: jest.fn().mockResolvedValue(new Map()),
+};
 
 describe('PeopleCollectionService', () => {
   let service: PeopleCollectionService;
@@ -121,6 +128,8 @@ describe('PeopleCollectionService', () => {
         { provide: getRepositoryToken(ScrapeJob), useValue: mockJobRepo },
         { provide: LinkedInCollector, useValue: mockLinkedInCollector },
         { provide: WebsiteCollector, useValue: mockWebsiteCollector },
+        { provide: SecAdvCollector, useValue: mockSecAdvCollector },
+        { provide: LlmPeopleExtractor, useValue: mockLlmExtractor },
       ],
     }).compile();
 
@@ -134,6 +143,9 @@ describe('PeopleCollectionService', () => {
     mockPersonRepo.findOne.mockResolvedValue(null);
     mockLinkedInCollector.collectPeople.mockResolvedValue([]);
     mockWebsiteCollector.collectForPeople.mockResolvedValue([]);
+    mockSecAdvCollector.collectForPeople.mockResolvedValue([]);
+    mockLlmExtractor.isEnabled.mockReturnValue(true);
+    mockLlmExtractor.extractForFirm.mockResolvedValue(new Map());
   });
 
   describe('collectPeopleForFirm', () => {
@@ -204,7 +216,7 @@ describe('PeopleCollectionService', () => {
 
       await service.collectPeopleForFirm(FIRM_ID);
 
-      const savedJob = mockJobRepo.save.mock.calls.at(-1)[0];
+      const savedJob = mockJobRepo.save.mock.calls.at(-1)?.[0];
       expect(savedJob.status).toBe(JobStatus.COMPLETED);
       expect(savedJob.completed_at).toBeInstanceOf(Date);
       expect(savedJob.metadata).toEqual(
@@ -514,7 +526,7 @@ describe('PeopleCollectionService', () => {
         'db explosion',
       );
 
-      const failedJob = mockJobRepo.save.mock.calls.at(-1)[0];
+      const failedJob = mockJobRepo.save.mock.calls.at(-1)?.[0];
       expect(failedJob.status).toBe(JobStatus.FAILED);
       expect(failedJob.error_message).toContain('db explosion');
       expect(failedJob.completed_at).toBeInstanceOf(Date);
@@ -530,7 +542,7 @@ describe('PeopleCollectionService', () => {
         'string-error',
       );
 
-      const failedJob = mockJobRepo.save.mock.calls.at(-1)[0];
+      const failedJob = mockJobRepo.save.mock.calls.at(-1)?.[0];
       expect(failedJob.error_message).toBe('string-error');
     });
   });
@@ -547,6 +559,9 @@ describe('PeopleCollectionService', () => {
       mockQueryBuilder.getMany.mockResolvedValue([]);
       mockPersonRepo.findOne.mockResolvedValue(null);
       mockWebsiteCollector.collectForPeople.mockResolvedValue([]);
+      mockSecAdvCollector.collectForPeople.mockResolvedValue([]);
+      mockLlmExtractor.isEnabled.mockReturnValue(true);
+      mockLlmExtractor.extractForFirm.mockResolvedValue(new Map());
 
       mockLinkedInCollector.collectPeople.mockResolvedValue([
         makeLinkedInContent('John Doe', roleTitle),
@@ -604,6 +619,9 @@ describe('PeopleCollectionService', () => {
       mockQueryBuilder.getMany.mockResolvedValue([]);
       mockPersonRepo.findOne.mockResolvedValue(null);
       mockWebsiteCollector.collectForPeople.mockResolvedValue([]);
+      mockSecAdvCollector.collectForPeople.mockResolvedValue([]);
+      mockLlmExtractor.isEnabled.mockReturnValue(true);
+      mockLlmExtractor.extractForFirm.mockResolvedValue(new Map());
 
       mockLinkedInCollector.collectPeople.mockResolvedValue([
         makeLinkedInContent('John Doe', roleTitle),
@@ -680,6 +698,9 @@ describe('PeopleCollectionService', () => {
       mockQueryBuilder.getMany.mockResolvedValue([]);
       mockPersonRepo.findOne.mockResolvedValue(null);
       mockLinkedInCollector.collectPeople.mockResolvedValue([]);
+      mockSecAdvCollector.collectForPeople.mockResolvedValue([]);
+      mockLlmExtractor.isEnabled.mockReturnValue(true);
+      mockLlmExtractor.extractForFirm.mockResolvedValue(new Map());
 
       mockWebsiteCollector.collectForPeople.mockResolvedValue([
         makeContent({ url }),
@@ -751,7 +772,7 @@ describe('PeopleCollectionService', () => {
       );
     });
 
-    it('extracts LinkedIn email from profile content', async () => {
+    it('never mines email from a LinkedIn snippet (LinkedIn does not expose emails)', async () => {
       mockLinkedInCollector.collectPeople.mockResolvedValue([
         makeLinkedInContent('John Doe', 'Chief Data Officer', {
           content: 'Contact me at john@example.com for opportunities',
@@ -762,7 +783,7 @@ describe('PeopleCollectionService', () => {
       await service.collectPeopleForFirm(FIRM_ID);
 
       expect(mockPersonRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ email: 'john@example.com' }),
+        expect.objectContaining({ email: null }),
       );
     });
 
@@ -778,6 +799,288 @@ describe('PeopleCollectionService', () => {
 
       expect(mockPersonRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ email: null }),
+      );
+    });
+
+    it('extracts obfuscated emails like "name [at] firm [dot] com"', async () => {
+      mockWebsiteCollector.collectForPeople.mockResolvedValue([
+        makeWebsiteTeamContent([
+          'John Smith - Chief Data Officer of Analytics',
+          'Contact: john [at] testfirm [dot] com',
+        ]),
+      ]);
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      expect(mockPersonRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'john@testfirm.com' }),
+      );
+    });
+
+    it('pairs mailto-derived emails with people by name match', async () => {
+      mockWebsiteCollector.collectForPeople.mockResolvedValue([
+        makeWebsiteTeamContent(
+          ['John Smith - Chief Data Officer of Analytics'],
+          {
+            metadata: {
+              mailtoPairs: [
+                {
+                  email: 'jsmith@testfirm.com',
+                  context: 'John Smith | Email John',
+                },
+              ],
+            },
+          },
+        ),
+      ]);
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      expect(mockPersonRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'jsmith@testfirm.com' }),
+      );
+    });
+  });
+
+  describe('bio extraction', () => {
+    it('populates bio from LinkedIn snippet About section', async () => {
+      mockLinkedInCollector.collectPeople.mockResolvedValue([
+        makeLinkedInContent('John Doe', 'Chief Data Officer', {
+          content:
+            'John Doe | Chief Data Officer | About: Seasoned data executive with 20 years of experience leading analytics organisations across PE-backed companies.',
+        }),
+      ]);
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      const created = mockPersonRepo.create.mock.calls.at(-1)![0];
+      expect(created.bio).toContain('Seasoned data executive');
+    });
+
+    it('populates bio from website team page paragraph', async () => {
+      mockWebsiteCollector.collectForPeople.mockResolvedValue([
+        makeWebsiteTeamContent([
+          'John Smith - Chief Data Officer of Analytics',
+          'John joined the firm in 2018 and leads all data and analytics initiatives across the portfolio companies.',
+        ]),
+      ]);
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      const created = mockPersonRepo.create.mock.calls.at(-1)![0];
+      expect(created.bio).toContain('John joined the firm');
+    });
+  });
+
+  describe('SEC ADV collector integration', () => {
+    it('saves people from structured parsedPeople metadata without regex', async () => {
+      mockSecAdvCollector.collectForPeople.mockResolvedValue([
+        {
+          url: 'https://adviserinfo.sec.gov/firm/summary/1234',
+          title: 'TestFirm — SEC Form ADV principals',
+          content: 'Jane Doe — Managing Director',
+          sourceType: 'sec_edgar',
+          metadata: {
+            source: 'iapd',
+            firmCrd: '1234',
+            parsedPeople: [
+              {
+                fullName: 'Jane Doe',
+                title: 'Chief Data Officer',
+                bio: 'Heads data strategy across all portfolio funds.',
+              },
+            ],
+          },
+        },
+      ]);
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      expect(mockPersonRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          full_name: 'Jane Doe',
+          title: 'Chief Data Officer',
+          role_category: RoleCategory.HEAD_OF_DATA,
+          bio: 'Heads data strategy across all portfolio funds.',
+          email: null,
+          linkedin_url: null,
+          confidence: 0.85,
+        }),
+      );
+    });
+
+    it('passes firm.sec_crd_number to SecAdvCollector', async () => {
+      mockFirmRepo.findOneByOrFail.mockResolvedValue({
+        ...FIRM,
+        sec_crd_number: '12345',
+      });
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      expect(mockSecAdvCollector.collectForPeople).toHaveBeenCalledWith(
+        'TestFirm',
+        '12345',
+      );
+    });
+  });
+
+  describe('LLM people extraction integration', () => {
+    it('calls llmExtractor.extractForFirm with firm name and new content', async () => {
+      const linkedinContent = makeLinkedInContent(
+        'John Doe',
+        'Chief Data Officer',
+      );
+      mockLinkedInCollector.collectPeople.mockResolvedValue([linkedinContent]);
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      expect(mockLlmExtractor.extractForFirm).toHaveBeenCalledWith(
+        'TestFirm',
+        expect.arrayContaining([
+          expect.objectContaining({ url: linkedinContent.url }),
+        ]),
+      );
+    });
+
+    it('uses LLM-extracted people instead of regex when LLM returns results for the source', async () => {
+      const websiteContent = makeWebsiteTeamContent([
+        'Some unstructured marketing prose that regex would fail on.',
+      ]);
+      mockWebsiteCollector.collectForPeople.mockResolvedValue([websiteContent]);
+
+      const llmMap = new Map();
+      llmMap.set(websiteContent.url, [
+        {
+          fullName: 'Alice Wonder',
+          title: 'Chief Data Officer',
+          bio: 'Leads the data org and AI initiatives.',
+          email: 'alice@firm.com',
+          linkedinUrl: null,
+          confidence: 0.9,
+        },
+      ]);
+      mockLlmExtractor.extractForFirm.mockResolvedValue(llmMap);
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      expect(mockPersonRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          full_name: 'Alice Wonder',
+          title: 'Chief Data Officer',
+          bio: 'Leads the data org and AI initiatives.',
+          email: 'alice@firm.com',
+          role_category: RoleCategory.HEAD_OF_DATA,
+          confidence: 0.9,
+        }),
+      );
+    });
+
+    it('attaches the LinkedIn URL to LLM people whose source is a LinkedIn profile', async () => {
+      const linkedinContent = makeLinkedInContent(
+        'John Doe',
+        'Chief Data Officer',
+      );
+      mockLinkedInCollector.collectPeople.mockResolvedValue([linkedinContent]);
+
+      const llmMap = new Map();
+      llmMap.set(linkedinContent.url, [
+        {
+          fullName: 'John Doe',
+          title: 'Chief Data Officer',
+          bio: 'About John...',
+          email: null,
+          linkedinUrl: null,
+          confidence: 0.85,
+        },
+      ]);
+      mockLlmExtractor.extractForFirm.mockResolvedValue(llmMap);
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      expect(mockPersonRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          full_name: 'John Doe',
+          linkedin_url: linkedinContent.url,
+        }),
+      );
+    });
+
+    it('falls back to regex parsing when LLM returns no people for that source', async () => {
+      mockLinkedInCollector.collectPeople.mockResolvedValue([
+        makeLinkedInContent('Jane Smith', 'Head of AI'),
+      ]);
+      mockLlmExtractor.extractForFirm.mockResolvedValue(new Map());
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      expect(mockPersonRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ full_name: 'Jane Smith' }),
+      );
+    });
+
+    it('skips LLM people whose role is not AI-relevant on LinkedIn sources', async () => {
+      const linkedinContent = makeLinkedInContent('Bob Sales', 'Sales Manager');
+      mockLinkedInCollector.collectPeople.mockResolvedValue([linkedinContent]);
+
+      const llmMap = new Map();
+      llmMap.set(linkedinContent.url, [
+        {
+          fullName: 'Bob Sales',
+          title: 'Sales Manager',
+          bio: null,
+          email: null,
+          linkedinUrl: null,
+          confidence: 0.8,
+        },
+      ]);
+      mockLlmExtractor.extractForFirm.mockResolvedValue(llmMap);
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      expect(mockPersonRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('SEC ADV structured data still wins over LLM results', async () => {
+      const secContent = makeContent({
+        url: 'https://adviserinfo.sec.gov/firm/1234',
+        title: 'SEC Form ADV',
+        content: 'Jane Doe — Managing Director',
+        sourceType: SourceType.SEC_EDGAR,
+        metadata: {
+          parsedPeople: [
+            {
+              fullName: 'Jane Doe',
+              title: 'Chief Data Officer',
+              bio: 'SEC bio',
+            },
+          ],
+        },
+      });
+      mockSecAdvCollector.collectForPeople.mockResolvedValue([secContent]);
+
+      const llmMap = new Map();
+      llmMap.set(secContent.url, [
+        {
+          fullName: 'Different Name',
+          title: 'CTO',
+          bio: 'LLM bio',
+          email: null,
+          linkedinUrl: null,
+          confidence: 0.9,
+        },
+      ]);
+      mockLlmExtractor.extractForFirm.mockResolvedValue(llmMap);
+
+      await service.collectPeopleForFirm(FIRM_ID);
+
+      expect(mockPersonRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          full_name: 'Jane Doe',
+          bio: 'SEC bio',
+        }),
+      );
+      expect(mockPersonRepo.create).not.toHaveBeenCalledWith(
+        expect.objectContaining({ full_name: 'Different Name' }),
       );
     });
   });

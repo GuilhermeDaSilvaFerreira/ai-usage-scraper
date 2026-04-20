@@ -35,7 +35,7 @@ describe('CommonLogger', () => {
 
   describe('constructor with file logging disabled', () => {
     it('should not create directory or file when NODE_ENV != development', () => {
-      process.env.NODE_ENV = 'development';
+      process.env.NODE_ENV = 'production';
       new CommonLogger('test-job');
 
       expect(mockedMkdirSync).not.toHaveBeenCalled();
@@ -192,7 +192,7 @@ describe('CommonLogger', () => {
     let logger: CommonLogger;
 
     beforeEach(() => {
-      process.env.NODE_ENV = 'development';
+      process.env.NODE_ENV = 'production';
       logger = new CommonLogger('test-job');
       mockedWriteFileSync.mockClear();
     });
@@ -234,7 +234,7 @@ describe('CommonLogger', () => {
 
   describe('getFilePath', () => {
     it('should return null when file logging is disabled', () => {
-      process.env.NODE_ENV = 'development';
+      process.env.NODE_ENV = 'production';
       const logger = new CommonLogger('test-job');
       expect(logger.getFilePath()).toBeNull();
     });
